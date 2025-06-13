@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import { useNavigate } from "react-router-dom";
 import { UploadCloud } from "lucide-react"; // Optional icon
+import { useFile } from "../context/FileContext";
 
 const Send = () => {
-    const [droppedFiles, setDroppedFiles] = useState([]);
+    const {droppedFiles, setDroppedFiles} = useFile();
     const [isDragActive, setIsDragActive] = useState(false);
     const navigate = useNavigate();
 
@@ -179,7 +180,7 @@ const Send = () => {
                                     <p className="text-sm font-normal text-center">Or click to select files from your computer</p>
                                 </div>
 
-                                <div className="flex space-x-10">
+                                <div className="md:flex space-x-10">
                                     <input
                                         type="file"
                                         id="files"

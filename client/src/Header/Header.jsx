@@ -1,14 +1,20 @@
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Menu, X } from "lucide-react"; // Lucide icons
 
-function Header(){
-    const navigate = useNavigate()
+function Header() {
+    const navigate = useNavigate();
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    return(
-         <header className="w-full flex items-center justify-between border-b border-[#f0f2f5] px-6 md:px-10 py-4" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
+    return (
+        <header className="w-full border-b border-[#f0f2f5] px-6 md:px-10 py-4" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
+            <div className="flex items-center justify-between">
+                {/* Logo and Brand */}
                 <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-                    <div className="w-6 h-6 text-">
+                    <div className="w-6 h-6">
                         {/* SVG Logo */}
                         <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+
                             <path
                                 d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z"
                                 fill="currentColor"
@@ -23,15 +29,36 @@ function Header(){
                     </div>
                     <h1 className="text-xl font-bold tracking-tight">Sanchaya</h1>
                 </div>
-                <nav className="hidden md:flex gap-6">
+
+                {/* Desktop Nav */}
+                <nav className="hidden  md:flex gap-6  items-center">
                     <Link className="text-sm font-medium hover:underline" to={'/send'}>Send</Link>
                     <Link className="text-sm font-medium hover:underline" to={'/receive'}>Receive</Link>
+                    <button onClick={() => navigate('/help')} className="h-10 px-4 bg-gray-100 rounded-full text-sm font-semibold hover:bg-gray-200 transition">
+                        Help
+                    </button>
                 </nav>
-                <button onClick={() => navigate('/help')} className="cursor-pointer ml-auto md:ml-0 h-10 px-4 bg-gray-100 rounded-full text-sm font-semibold hover:bg-gray-200 transition">
-                    Help
-                </button>
-            </header>
-    )
+
+                {/* Mobile Menu Toggle */}
+                <div className="md:hidden">
+                    <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-gray-700">
+                        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile Nav */}
+            {mobileMenuOpen && (
+                <div className="flex flex-col mt-4 gap-4 md:hidden">
+                    <Link to={'/send'} onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium hover:underline">Send</Link>
+                    <Link to={'/receive'} onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium hover:underline">Receive</Link>
+                    <button onClick={() => { navigate('/help'); setMobileMenuOpen(false); }} className="h-10 px-4 bg-gray-100 rounded-full text-sm font-semibold hover:bg-gray-200 transition">
+                        Help
+                    </button>
+                </div>
+            )}
+        </header>
+    );
 }
 
-export default Header
+export default Header;

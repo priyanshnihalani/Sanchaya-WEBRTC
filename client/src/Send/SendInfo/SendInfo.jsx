@@ -9,8 +9,7 @@ function SendInfo() {
     const user = useUserId();
     const location = useLocation();
     const { fromSend } = location.state || {};
-
-    if (fromSend) {
+    if (!fromSend) {
         return <Navigate to={"/send"} />;
     }
 
