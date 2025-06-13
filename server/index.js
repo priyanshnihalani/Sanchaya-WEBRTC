@@ -18,9 +18,9 @@ const io = new Server(server, {
 });
 
 const userSocketMap = {}
-const sender = {}
+const connection = {}
 
-connectionSetUp(io, userSocketMap, sender)
+connectionSetUp(io, userSocketMap, connection)
 
 server.listen(process.env.PORT, () => {
     console.log(`Server is started at ${process.env.PORT}`)

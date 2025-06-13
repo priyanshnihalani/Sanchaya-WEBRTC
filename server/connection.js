@@ -1,4 +1,4 @@
-export function connectionSetUp(io, userSocketMap, sender) {
+export function connectionSetUp(io, userSocketMap, connection) {
     io.on("connection", (socket) => {
         const id = socket.id;
         console.log("User Connected:", id);
@@ -35,12 +35,12 @@ export function connectionSetUp(io, userSocketMap, sender) {
             const receiverSocketId = userSocketMap[receiverId]
 
             if (approved) {
-                if (!sender[senderId]) {
-                    sender[senderId] = []
+                if (!connection[senderId]) {
+                    connection[senderId] = []
                 }
 
-                if (!sender[senderId].includes(receiverId)) {
-                    sender[senderId].push(receiverId);
+                if (!connection[senderId].includes(receiverId)) {
+                    connection[senderId].push(receiverId);
                 }
 
                 // Notify receiver of approval
@@ -70,19 +70,19 @@ export function connectionSetUp(io, userSocketMap, sender) {
 
             // Clean from sender groups
             if (disconnectedUserId) {
-                for (const senderId in sender) {
+                for (const senderId in connection) {
                     // If sender itself disconnected
                     if (senderId === disconnectedUserId) {
-                        delete sender[senderId];
+                        delete connection[senderId];
                         console.log(`Sender ${senderId} disconnected and group removed.`);
                     } else {
                         // Remove from receiver list
-                        sender[senderId] = sender[senderId].filter(
+                        connection[senderId] = connection[senderId].filter(
                             (receiverId) => receiverId !== disconnectedUserId
                         );
 
-                        if (sender[senderId].length === 0) {
-                            delete sender[senderId];
+                        if (connection[senderId].length === 0) {
+                            delete connection[senderId];
                             console.log(`Sender ${senderId} group removed (empty).`);
                         }
                     }
