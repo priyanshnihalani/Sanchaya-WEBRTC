@@ -3,11 +3,24 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../Footer/Footer";
 import Header from "../Header/Header";
 import './Home.css'
+import { useSocket } from "../context/SocketContext";
+import { lazy, useEffect } from "react";
+import { useUserId } from "../context/UserIdContext";
 
 const Home = () => {
 
 
     const navigate = useNavigate();
+
+    const userId = useUserId()
+    const socket = useSocket()
+
+    useEffect(() => {
+
+        { userId && socket.emit("register", { userId }) }
+
+    }, [socket])
+
 
     return (
         <div
@@ -73,6 +86,7 @@ const Home = () => {
                         <div
                             className="w-full h-64 sm:h-80 md:h-96 lg:h-[30rem] xl:h-[32rem] bg-cover bg-center rounded-xl shadow-md"
                             style={{
+                                
                                 backgroundImage:
                                     'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCk3BLjeG8Rzk3U7SQa762wMEJ63a_F2y8-vg2nfsIgJeyNDUiiLT3hFVLVa07Qii1tm0ffh0o1VOS7IUFbfk7tKmkZ2Bhn20B87Cu0ptE7_wgfOT9wqSA2UapFqeSGHGLoXeKZ8tZLR92TO4vEnprTMNHozUTUtkjB7J5EvtyruIKgvIWbCBb21T-l-DFuusQueLXHpRttEfefQK-KYISROZXJD7vsGDEeeozdreYW1HQLmSBv9UrEqxpJUKxQcMlvnufpSEoaqarG")',
                             }}

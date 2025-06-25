@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
 import { getOrCreateUserId } from "../utility/getOrCreateUserId";
-import {shareRoom} from "../utility/shareRoom";
+import { shareRoom } from "../utility/shareRoom";
 
 const UserIdContext = createContext()
 
@@ -16,7 +16,9 @@ export const UserIdProvider = ({ children }) => {
         setUserName(name)
     }, [])
 
-    return(
+    
+
+    return (
         <UserIdContext.Provider value={{ userId, userName }}>
             {children}
         </UserIdContext.Provider>

@@ -175,7 +175,7 @@ const Send = () => {
                                 ${isDragActive ? "border-blue-400 bg-blue-50" : "border-[#dbe0e6]"}`}
                             >
                                 <div className="flex flex-col items-center gap-2 max-w-[480px]">
-                                    <UploadCloud size={40} className="text-black" />
+                                    <UploadCloud size={40} className="text-black animate-bounce" />
                                     <p className="text-lg font-bold text-center">Drag and drop files here</p>
                                     <p className="text-sm font-normal text-center">Or click to select files from your computer</p>
                                 </div>

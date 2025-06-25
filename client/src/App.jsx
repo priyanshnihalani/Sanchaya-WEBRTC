@@ -11,15 +11,18 @@ import { UserIdProvider } from './context/UserIdContext';
 import SendInfo from './Send/SendInfo/SendInfo'
 import { FileProvider } from './context/FileContext'
 import { SocketProvider } from './context/SocketContext'
+import SocketRegistrar from './SocketRegister'
+import FileTransfer from './FileTransfer/FileTransfer'
 
 function App() {
 
   return (
     <>
-      <SocketProvider>
 
+      <SocketProvider>
         <FileProvider>
           <UserIdProvider>
+            <SocketRegistrar />
             <Router>
               <Routes>
                 <Route path='/' element={<Home />} />
@@ -30,6 +33,7 @@ function App() {
                 <Route path='/privacypolicy' element={<PrivacyPolicy />} />
                 <Route path='/contactus' element={<ContactUs />} />
                 <Route path='/sendinfo' element={<SendInfo />} />
+                <Route path='/file-transfer' element={<FileTransfer />} />
               </Routes>
             </Router>
           </UserIdProvider>
