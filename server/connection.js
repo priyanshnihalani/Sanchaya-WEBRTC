@@ -156,6 +156,22 @@ export function connectionSetUp(io, userSocketMap, connection) {
 
 
 
+    socket.on("receiver-reconnected", ({ receiverId, senderId }) => {
+      const senderSocketId = userSocketMap[senderId];
+      const receiverSocketId = userSocketMap[receiverId];
+
+      console.log(`Receiver ${receiverId} reconnected, updating mapping.`);
+
+      // Update socket ID for receiver
+      userSocketMap[receiverId] = socket.id;
+
+      // Optional: inform sender
+      if (senderSocketId) {
+        io.to(senderSocketId).emit("receiver-rejoined", { receiverId });
+        console.log(`Notified sender ${senderId} that receiver ${receiverId} rejoined.`);
+      }
+    });
+
     // Handle disconnection
     socket.on("disconnect", () => {
       let disconnectedUserId = null;

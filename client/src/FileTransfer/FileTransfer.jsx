@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useFile } from "../context/FileContext";
 import { useSocket } from "../context/SocketContext";
 import { useLocation } from "react-router-dom";
+import CryptoJS from "crypto-js";
 
 function FileTransfer() {
+    const secretCryptoKey = import.meta.env.VITE_CRYPTO_API_KEY;
+
     const { droppedFiles } = useFile();
     const socket = useSocket();
     const { state } = useLocation();
@@ -12,7 +15,9 @@ function FileTransfer() {
     const [receiverId, setReceiverId] = useState('');
     const [senderId, setSenderId] = useState('');
     const [currentFile, setCurrentFile] = useState('');
-
+    const resumeTimeoutRef = useRef(null);       // Tracks the timeout
+    const pausedFileRef = useRef(null);          // Tracks paused fileName
+    const pausedFileDataRef = useRef(null);
 
     useEffect(() => {
         setCurrentFile(state?.fileName);
@@ -32,7 +37,7 @@ function FileTransfer() {
 
     useEffect(() => {
         function handleNewAcceptedFile({ receiverId, senderId, fileName }) {
-            console.log("📥 New file accepted by receiver:", fileName);
+            console.log("New file accepted by receiver:", fileName);
 
             const file = droppedFiles.find(f => f.name === fileName);
             if (!file) {
@@ -88,6 +93,13 @@ function FileTransfer() {
             socket.timeout(30000).emit('file-start', fileMetadata, (err, response) => {
                 // Enhanced error logging
                 if (err) {
+                    setFilesProgress(prev =>
+                        prev.map(f =>
+                            f.fileName === file.name
+                                ? { ...f, status: "error", percent: 0 }
+                                : f
+                        )
+                    );
                     console.error("Socket timeout or error:", err);
                     return;
                 }
@@ -115,13 +127,16 @@ function FileTransfer() {
         };
     }, [socket, droppedFiles]);
 
-    //  Send chunks of the file
+    function arrayBufferToWordArray(ab) {
+        const u8 = new Uint8Array(ab);
+        return CryptoJS.lib.WordArray.create(u8);
+    }
+
     async function handleSend(file, currentFile, receiverId) {
         let byteSent = 0;
         const chunkSize = 256 * 1024;
         let offset = 0;
 
-        // ✅ Fix: Update status for only the current file
         setFilesProgress(prev =>
             prev.map(f =>
                 f.fileName === file.name
@@ -134,17 +149,43 @@ function FileTransfer() {
             while (offset < file.file.size) {
                 const chunkBlob = file.file.slice(offset, offset + chunkSize);
                 const chunkBuffer = await chunkBlob.arrayBuffer();
+                const wordArray = arrayBufferToWordArray(chunkBuffer);
+                const encrypted = CryptoJS.AES.encrypt(wordArray, secretCryptoKey).toString();
 
                 await new Promise((resolve, reject) => {
                     socket.timeout(30000).emit('file-chunk', {
-                        chunk: chunkBuffer,
+                        chunk: encrypted,
                         receiverId
                     }, (err, response) => {
-                        if (err) return reject(err);
-                        if (response?.status !== 'ok') return reject(new Error(`Chunk error: ${response?.reason || 'Unknown'}`));
+                        if (err || response?.status !== 'ok') {
+                            // Receiver may be offline
+                            console.warn("Receiver lost. Waiting 30s for rejoin...");
+
+                            pausedFileRef.current = currentFile;
+                            pausedFileDataRef.current = { file, offset, receiverId };
+
+                            // Start 30s timer
+                            resumeTimeoutRef.current = setTimeout(() => {
+                                console.warn("Receiver didn't rejoin in time. Aborting.");
+
+                                setFilesProgress(prev =>
+                                    prev.map(f =>
+                                        f.fileName === currentFile ? { ...f, status: "error" } : f
+                                    )
+                                );
+
+                                pausedFileRef.current = null;
+                                pausedFileDataRef.current = null;
+                                resumeTimeoutRef.current = null;
+                            }, 30000);
+
+                            return; // Exit the chunk loop
+                        }
+
                         resolve();
                     });
                 });
+
 
                 offset += chunkBuffer.byteLength;
                 byteSent += chunkBuffer.byteLength;
@@ -179,6 +220,96 @@ function FileTransfer() {
             );
         }
     }
+
+    async function resumeFromOffset(file, fileName, receiverId, startOffset) {
+        let byteSent = startOffset;
+        const chunkSize = 256 * 1024;
+        let offset = startOffset;
+
+
+        setFilesProgress(prev =>
+            prev.map(f =>
+                f.fileName === fileName
+                    ? { ...f, status: "in-progress" }
+                    : f
+            )
+        );
+
+        try {
+            while (offset < file.file.size) {
+                const chunkBlob = file.file.slice(offset, offset + chunkSize);
+                const chunkBuffer = await chunkBlob.arrayBuffer();
+
+                await new Promise((resolve, reject) => {
+                    socket.timeout(30000).emit('file-chunk', {
+                        chunk: chunkBuffer,
+                        receiverId
+                    }, (err, response) => {
+                        if (err || response?.status !== 'ok') return reject(err || new Error("Chunk error"));
+                        resolve();
+                    });
+                });
+
+                offset += chunkBuffer.byteLength;
+                byteSent += chunkBuffer.byteLength;
+
+                const percent = Math.round((byteSent / file.file.size) * 100);
+                setFilesProgress(prev =>
+                    prev.map(f =>
+                        f.fileName === fileName ? { ...f, percent } : f
+                    )
+                );
+            }
+
+            socket.emit("file-end", { receiverId, fileName });
+
+            setFilesProgress(prev =>
+                prev.map(f =>
+                    f.fileName === fileName ? { ...f, status: "done", percent: 100 } : f
+                )
+            );
+        } catch (err) {
+            console.error("Resume failed:", err);
+            setFilesProgress(prev =>
+                prev.map(f =>
+                    f.fileName === fileName ? { ...f, status: "error" } : f
+                )
+            );
+        }
+    }
+
+
+
+    useEffect(() => {
+        function handleReceiverRejoined({ receiverId }) {
+            if (
+                pausedFileRef.current &&
+                pausedFileDataRef.current?.receiverId === receiverId &&
+                resumeTimeoutRef.current
+            ) {
+                clearTimeout(resumeTimeoutRef.current);
+                resumeTimeoutRef.current = null;
+
+                const { file, offset, receiverId } = pausedFileDataRef.current;
+                const fileName = pausedFileRef.current;
+
+                console.log("✅ Receiver rejoined within 30s. Resuming:", fileName);
+
+                // Clear paused state
+                pausedFileRef.current = null;
+                pausedFileDataRef.current = null;
+
+                resumeFromOffset(file, fileName, receiverId, offset);
+            }
+        }
+
+
+        socket.on('receiver-rejoined', handleReceiverRejoined);
+
+        return () => {
+            socket.off('receiver-rejoined', handleReceiverRejoined);
+        };
+    }, [socket, currentFile, senderId]);
 
 
     return (
