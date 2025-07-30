@@ -10,34 +10,38 @@ import ContactUs from './ContactUs/ContactUs'
 import { UserIdProvider } from './context/UserIdContext';
 import SendInfo from './Send/SendInfo/SendInfo'
 import { FileProvider } from './context/FileContext'
-import { SocketProvider } from './context/SocketContext'
+import { SocketProvider, useSocket } from './context/SocketContext'
 import SocketRegistrar from './SocketRegister'
 import FileTransfer from './FileTransfer/FileTransfer'
+import { WebRTCProvider } from './context/WebRTCContext'
+import FileReceiver from './FileReceiver/FileReceiver'
 
 function App() {
-
   return (
     <>
 
       <SocketProvider>
-        <FileProvider>
-          <UserIdProvider>
-            <SocketRegistrar />
-            <Router>
-              <Routes>
-                <Route path='/' element={<Home />} />
-                <Route path='/help' element={<Help />} />
-                <Route path='/send' element={<Send />} />
-                <Route path='/receive' element={<Receive />} />
-                <Route path='/termsandcondtion' element={<TermsAndConditions />} />
-                <Route path='/privacypolicy' element={<PrivacyPolicy />} />
-                <Route path='/contactus' element={<ContactUs />} />
-                <Route path='/sendinfo' element={<SendInfo />} />
-                <Route path='/file-transfer' element={<FileTransfer />} />
-              </Routes>
-            </Router>
-          </UserIdProvider>
-        </FileProvider>
+        <WebRTCProvider >
+          <FileProvider>
+            <UserIdProvider>
+              <SocketRegistrar />
+              <Router>
+                <Routes>
+                  <Route path='/' element={<Home />} />
+                  <Route path='/help' element={<Help />} />
+                  <Route path='/send' element={<Send />} />
+                  <Route path='/receive' element={<Receive />} />
+                  <Route path='/termsandcondtion' element={<TermsAndConditions />} />
+                  <Route path='/privacypolicy' element={<PrivacyPolicy />} />
+                  <Route path='/contactus' element={<ContactUs />} />
+                  <Route path='/sendinfo' element={<SendInfo />} />
+                  <Route path='/file-transfer' element={<FileTransfer />} />
+                  <Route path='/file-receiver' element={<FileReceiver />} />
+                </Routes>
+              </Router>
+            </UserIdProvider>
+          </FileProvider>
+        </WebRTCProvider>
       </SocketProvider>
     </>
   )

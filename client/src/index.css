@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
-.jost {
-  font-family: "Jost", sans-serif;
+.jakarta-sans {
+  font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;

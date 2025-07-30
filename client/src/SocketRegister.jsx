@@ -13,7 +13,7 @@ function SocketRegistrar() {
         }
     }, [socket, userId]);
 
-    return null; // No UI
+    return null; 
 }
 
 export default SocketRegistrar;

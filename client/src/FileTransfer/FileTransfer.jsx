@@ -1,381 +1,78 @@
-import { useEffect, useState, useRef } from "react";
-import { useFile } from "../context/FileContext";
-import { useSocket } from "../context/SocketContext";
+import Header from "../Header/Header";
+import Footer from "../Footer/Footer";
 import { useLocation } from "react-router-dom";
-import CryptoJS from "crypto-js";
-
-function FileTransfer() {
-    const secretCryptoKey = import.meta.env.VITE_CRYPTO_API_KEY;
-
-    const { droppedFiles } = useFile();
-    const socket = useSocket();
-    const { state } = useLocation();
-
-    const [fileProgress, setFilesProgress] = useState([]);
-    const [receiverId, setReceiverId] = useState('');
-    const [senderId, setSenderId] = useState('');
-    const [currentFile, setCurrentFile] = useState('');
-    const resumeTimeoutRef = useRef(null);       // Tracks the timeout
-    const pausedFileRef = useRef(null);          // Tracks paused fileName
-    const pausedFileDataRef = useRef(null);
-
-    useEffect(() => {
-        setCurrentFile(state?.fileName);
-        setSenderId(state?.senderId);
-        setReceiverId(state?.receiverId);
-    }, [state]);
-
-    useEffect(() => {
-        const initialProgress = droppedFiles.map(file => ({
-            fileName: file.name,
-            percent: 0,
-            status: 'waiting'
-        }));
-        setFilesProgress(initialProgress);
-    }, [droppedFiles]);
-
-
-    useEffect(() => {
-        function handleNewAcceptedFile({ receiverId, senderId, fileName }) {
-            console.log("New file accepted by receiver:", fileName);
-
-            const file = droppedFiles.find(f => f.name === fileName);
-            if (!file) {
-                console.error("File not found in droppedFiles:", fileName);
-                return;
-            }
-
-            // Send file metadata
-            const fileMetadata = {
-                fileName: file.name,
-                size: file.file.size,
-                type: file.file.type,
-                senderId,
-                receiverId
-            };
-
-            socket.timeout(30000).emit('file-start', fileMetadata, (err, response) => {
-                if (err || response?.status !== 'ok') {
-                    console.error("Receiver didn't acknowledge file-start:", response);
-                    return;
-                }
-
-                handleSend(file, fileName, receiverId); // Start transfer
-            });
-        }
-
-        function handleStartFileTransfer({ receiverId, senderId, fileName }) {
-            console.log("Receiver ready. Starting transfer for:", fileName);
-            console.log("Receiver ID:", receiverId, "Sender ID:", senderId);
-
-
-            console.log("Available files:", droppedFiles.map(f => f.name));
-
-            const file = droppedFiles.find(item => item.name === fileName);
-            if (!file) {
-                console.error("File not found:", fileName);
-                console.error("Available files:", droppedFiles);
-                return;
-            }
-
-            // Ensure we're using the correct receiverId from the event
-            const fileMetadata = {
-                fileName: file.name,
-                size: file.file.size,
-                type: file.file.type,
-                senderId,
-                receiverId // Use the receiverId from the event parameter
-            };
-
-            console.log("Sending file metadata:", fileMetadata);
-
-            // Emit file-start, wait for receiver to ack before sending chunks
-            socket.timeout(30000).emit('file-start', fileMetadata, (err, response) => {
-                // Enhanced error logging
-                if (err) {
-                    setFilesProgress(prev =>
-                        prev.map(f =>
-                            f.fileName === file.name
-                                ? { ...f, status: "error", percent: 0 }
-                                : f
-                        )
-                    );
-                    console.error("Socket timeout or error:", err);
-                    return;
-                }
-
-                console.log("Server response:", response);
-
-                if (response?.status !== 'ok') {
-                    console.error("Receiver didn't acknowledge file-start. Response:", response);
-                    console.error("Response status:", response?.status);
-                    console.error("Response reason:", response?.reason);
-                    return;
-                }
-
-                console.log("Receiver acked file-start, now sending file...");
-                handleSend(file, fileName, receiverId); // Use receiverId from event
-            });
-        }
-
-        socket.on('start-file-transfer', handleStartFileTransfer);
-        if (currentFile && senderId && receiverId) socket.on('get-accepted-file', handleNewAcceptedFile);
-
-        return () => {
-            socket.off('start-file-transfer', handleStartFileTransfer);
-            socket.off('get-accepted-file', handleNewAcceptedFile);
-        };
-    }, [socket, droppedFiles]);
-
-    function arrayBufferToWordArray(ab) {
-        const u8 = new Uint8Array(ab);
-        return CryptoJS.lib.WordArray.create(u8);
-    }
-
-    async function handleSend(file, currentFile, receiverId) {
-        let byteSent = 0;
-        const chunkSize = 256 * 1024;
-        let offset = 0;
-
-        setFilesProgress(prev =>
-            prev.map(f =>
-                f.fileName === file.name
-                    ? { ...f, status: "in-progress", percent: 0 }
-                    : f
-            )
-        );
-
-        try {
-            while (offset < file.file.size) {
-                const chunkBlob = file.file.slice(offset, offset + chunkSize);
-                const chunkBuffer = await chunkBlob.arrayBuffer();
-                const wordArray = arrayBufferToWordArray(chunkBuffer);
-                const encrypted = CryptoJS.AES.encrypt(wordArray, secretCryptoKey).toString();
-
-                await new Promise((resolve, reject) => {
-                    socket.timeout(30000).emit('file-chunk', {
-                        chunk: encrypted,
-                        receiverId
-                    }, (err, response) => {
-                        if (err || response?.status !== 'ok') {
-                            // Receiver may be offline
-                            console.warn("Receiver lost. Waiting 30s for rejoin...");
-
-                            pausedFileRef.current = currentFile;
-                            pausedFileDataRef.current = { file, offset, receiverId };
-
-                            // Start 30s timer
-                            resumeTimeoutRef.current = setTimeout(() => {
-                                console.warn("Receiver didn't rejoin in time. Aborting.");
-
-                                setFilesProgress(prev =>
-                                    prev.map(f =>
-                                        f.fileName === currentFile ? { ...f, status: "error" } : f
-                                    )
-                                );
-
-                                pausedFileRef.current = null;
-                                pausedFileDataRef.current = null;
-                                resumeTimeoutRef.current = null;
-                            }, 30000);
-
-                            return; // Exit the chunk loop
-                        }
-
-                        resolve();
-                    });
-                });
-
-
-                offset += chunkBuffer.byteLength;
-                byteSent += chunkBuffer.byteLength;
-
-                const percent = Math.round((byteSent / file.file.size) * 100);
-                setFilesProgress(prev =>
-                    prev.map(f =>
-                        f.fileName === currentFile ? { ...f, percent } : f
-                    )
-                );
-            }
-
-
-            socket.timeout(10000).emit('file-end', { receiverId, fileName: currentFile })
-
-            setFilesProgress(prev =>
-                prev.map(f =>
-                    f.fileName === file.name
-                        ? { ...f, status: 'done', percent: 100 }
-                        : f
-                )
-            );
-
-        } catch (err) {
-            console.error("Error during file send:", err);
-            setFilesProgress(prev =>
-                prev.map(f =>
-                    f.fileName === currentFile
-                        ? { ...f, status: "error" }
-                        : f
-                )
-            );
-        }
-    }
-
-    async function resumeFromOffset(file, fileName, receiverId, startOffset) {
-        let byteSent = startOffset;
-        const chunkSize = 256 * 1024;
-        let offset = startOffset;
-
-
-        setFilesProgress(prev =>
-            prev.map(f =>
-                f.fileName === fileName
-                    ? { ...f, status: "in-progress" }
-                    : f
-            )
-        );
-
-        try {
-            while (offset < file.file.size) {
-                const chunkBlob = file.file.slice(offset, offset + chunkSize);
-                const chunkBuffer = await chunkBlob.arrayBuffer();
-
-                await new Promise((resolve, reject) => {
-                    socket.timeout(30000).emit('file-chunk', {
-                        chunk: chunkBuffer,
-                        receiverId
-                    }, (err, response) => {
-                        if (err || response?.status !== 'ok') return reject(err || new Error("Chunk error"));
-                        resolve();
-                    });
-                });
-
-                offset += chunkBuffer.byteLength;
-                byteSent += chunkBuffer.byteLength;
-
-                const percent = Math.round((byteSent / file.file.size) * 100);
-                setFilesProgress(prev =>
-                    prev.map(f =>
-                        f.fileName === fileName ? { ...f, percent } : f
-                    )
-                );
-            }
-
-            socket.emit("file-end", { receiverId, fileName });
-
-            setFilesProgress(prev =>
-                prev.map(f =>
-                    f.fileName === fileName ? { ...f, status: "done", percent: 100 } : f
-                )
-            );
-        } catch (err) {
-            console.error("Resume failed:", err);
-            setFilesProgress(prev =>
-                prev.map(f =>
-                    f.fileName === fileName ? { ...f, status: "error" } : f
-                )
-            );
-        }
-    }
-
-
-
-    useEffect(() => {
-        function handleReceiverRejoined({ receiverId }) {
-            if (
-                pausedFileRef.current &&
-                pausedFileDataRef.current?.receiverId === receiverId &&
-                resumeTimeoutRef.current
-            ) {
-                clearTimeout(resumeTimeoutRef.current);
-                resumeTimeoutRef.current = null;
-
-                const { file, offset, receiverId } = pausedFileDataRef.current;
-                const fileName = pausedFileRef.current;
-
-                console.log("✅ Receiver rejoined within 30s. Resuming:", fileName);
-
-                // Clear paused state
-                pausedFileRef.current = null;
-                pausedFileDataRef.current = null;
-
-                resumeFromOffset(file, fileName, receiverId, offset);
-            }
-        }
-
-
-        socket.on('receiver-rejoined', handleReceiverRejoined);
-
-        return () => {
-            socket.off('receiver-rejoined', handleReceiverRejoined);
-        };
-    }, [socket, currentFile, senderId]);
-
-
-    return (
-        <>
-            {fileProgress.length > 0 ? (
-                <div className="px-4 md:px-8 lg:px-16 py-4">
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-700 dark:text-white mb-6 border-b pb-2">
-                        📂 File Transfer Progress
-                    </h2>
-
-                    {fileProgress.map(({ fileName, percent, status }) => (
-                        <div
-                            key={fileName}
-                            className="my-6 mx-2 p-4 border border-gray-200 shadow-md rounded-xl bg-white dark:bg-gray-900 transition-all duration-300"
-                        >
-                            <div className="flex justify-between items-center mb-2">
-                                <p className="font-semibold text-gray-800 dark:text-gray-200">
-                                    {fileName}
-                                    <span className="text-xs ml-2 text-gray-500">({status})</span>
-                                </p>
-                                <span className={`text-sm font-medium ${status === "done"
-                                    ? "text-green-600"
-                                    : status === "error"
-                                        ? "text-red-500"
-                                        : status === "in-progress"
-                                            ? "text-blue-500"
-                                            : "text-gray-500"
-                                    }`}>
-                                    {status === "done" ? "✔ Done" : status === "error" ? "✖ Error" : "⏳ In Progress"}
-                                </span>
-                            </div>
-
-                            <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                    className={`absolute top-0 left-0 h-full transition-all duration-500 ease-in-out rounded-full
-                                ${status === "done" ? "bg-gradient-to-r from-green-400 to-green-600"
-                                            : status === "error" ? "bg-gradient-to-r from-red-400 to-red-600"
-                                                : status === "in-progress" ? "bg-gradient-to-r from-blue-400 to-blue-600 animate-pulse"
-                                                    : "bg-gray-400"}`}
-                                    style={{ width: `${percent}%` }}
-                                ></div>
-                            </div>
-
-                            <div className="text-right mt-1 text-sm text-gray-600 dark:text-gray-300">
-                                {percent}%
-                            </div>
-
-                            {status === "error" && (
-                                <p className="text-red-500 text-xs mt-2">⚠ File transfer failed. Please retry.</p>
-                            )}
-                        </div>
-                    ))}
+import { useWebRTC } from "../context/WebRTCContext";
+
+const FileTransfer = () => {
+  const location = useLocation();
+  const metaData = location?.state?.metaData
+
+  const {
+    percentMap
+  } = useWebRTC();
+
+  function formatBytes(bytes) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  }
+
+  return (
+    <div
+      className="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden"
+      style={{ fontFamily: `Inter, "Noto Sans", sans-serif` }}
+    >
+      <div className="layout-container flex h-full grow flex-col">
+        {/* Header */}
+        <Header />
+
+        {/* Main Content */}
+        <main className="px-40 flex flex-1 justify-center py-5">
+          <div className="layout-content-container max-w-[960px] flex-1 flex flex-col">
+            <h2 className="text-[28px] font-bold text-center pt-5 pb-3">Transferring Files</h2>
+            <p className="text-base text-center px-4 pb-3">
+              Your files are being securely transferred. Please keep this window open until the process is complete.
+            </p>
+
+            <h3 className="text-lg font-bold px-4 pt-4 pb-2">Files in Progress</h3>
+
+            {metaData.map((item, index) => (
+              <div key={index} className="flex items-center justify-between gap-4 bg-white px-4 py-2 min-h-[72px]">
+                <div className="flex flex-col">
+                  <p className="text-base font-medium text-[#121416] truncate">{item.name}</p>
+                  <p className="text-sm text-[#6a7581]">{`${formatBytes(item.size)} | Estimated time remaining: ${item.time || 0}`}</p>
                 </div>
-            ) : (
-                <div className="flex flex-col justify-center items-center w-full min-h-screen text-center p-6">
-                    <p className="text-4xl md:text-5xl lg:text-6xl text-gray-300 dark:text-gray-600 font-bold italic">
-                        No Files Found
-                    </p>
-                    <p className="text-md text-gray-500 dark:text-gray-400 mt-2">
-                        Drop a file or wait for one to arrive to see transfer progress here.
-                    </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-[88px] bg-[#dde0e3] rounded-sm overflow-hidden">
+                    <div className="h-1 bg-[#121416]" style={{ width: `${percentMap[item.name] || 0}%` }} />
+                  </div>
+                  <p className="text-sm font-medium text-[#121416]">{percentMap[item.name] || 0}%</p>
                 </div>
-            )}
-        </>
-    );
+              </div>
+            ))}
 
-}
+            {/* Example Screenshot / Preview Image */}
+            <div className="flex w-full grow p-4 bg-white @container">
+              <div className="w-full flex aspect-[3/2] rounded-xl overflow-hidden">
+                <div
+                  className="w-full bg-center bg-no-repeat bg-cover rounded-none flex-1"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%), url('https://lh3.googleusercontent.com/aida-public/AB6AXuAG1aAhWW_uJDjzjvhspRCcGm82pwQxxcY4SVD-dU8lDMn406Ujj7_HalBs6o-3LMvS04bI7gJZbICskLr9Hkvr3KdPmR7cZwUJ-4xSDr1g2xVWUyFqK_6QZbnI5LUDUgFoUQAZafk8uMbXaMc9XQsJdEqavW35LSMLcXGbGmmiYQm_oX02MXqdrgoim9BYSVIf-D83yHb5HR3Z1_HS-fTT4pZvYdyHsk6eoemBnMvLTN3QprAdOhnwbfCBPoEjR8izriZ3QHOK0Qw')",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <Footer />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
 
 export default FileTransfer;

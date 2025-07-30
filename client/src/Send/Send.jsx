@@ -1,147 +1,41 @@
-import React, { useContext, useState } from "react";
+import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useFile } from "../context/FileContext";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import { useNavigate } from "react-router-dom";
-import { UploadCloud } from "lucide-react"; // Optional icon
-import { useFile } from "../context/FileContext";
 
 const Send = () => {
-    const {droppedFiles, setDroppedFiles} = useFile();
+    const { droppedFiles, setDroppedFiles } = useFile();
     const [isDragActive, setIsDragActive] = useState(false);
+    const fileInputRef = useRef(null);
     const navigate = useNavigate();
 
     const handleFileInputChange = (e) => {
-        const files = Array.from(e.target.files).map((file) => {
-            return {
-                file: file,
-                name: file.name,
-                type: file.type,
-                size: file.size
-            };
-        });
+        const files = Array.from(e.target.files).map((file) => ({
+            file,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+        }));
 
-        setDroppedFiles([...droppedFiles,...files]);
-        console.log("Selected files/folders:", files);
+        setDroppedFiles([...droppedFiles, ...files]);
+        console.log("Selected files:", files);
     };
 
-    const handleFolderInputChange = (e) => {
-        const files = Array.from(e.target.files);
-
-        const folderTree = {};
-
-        files.forEach((file) => {
-            const pathParts = file.webkitRelativePath.split("/");
-            console.log(pathParts)
-            let current = folderTree;
-
-            for (let i = 0; i < pathParts.length; i++) {
-                const part = pathParts[i];
-
-                if (i === pathParts.length - 1) {
-                    // It's a file
-                    if (!current.children) current.children = [];
-                    current.children.push({
-                        name: part,
-                        type: "file",
-                        file: file
-                    });
-                } else {
-                    // It's a folder
-                    if (!current.children) current.children = [];
-
-                    let folder = current.children.find(
-                        (child) => child.name === part && child.type === "directory"
-                    );
-
-                    if (!folder) {
-                        folder = {
-                            name: part,
-                            type: "directory",
-                            children: []
-                        };
-                        current.children.push(folder);
-                    }
-
-                    current = folder;
-                }
-            }
-        });
-
-
-        const tree = folderTree.children || [];
-
-        setDroppedFiles([...droppedFiles, ...tree]);
-        console.log("Full folder tree:", tree);
-    };
-
-
-
-    const handleDrop = async (e) => {
+    const handleDrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
         setIsDragActive(false);
 
-        const items = e.dataTransfer.items;
-        const files = [];
+        const dropped = Array.from(e.dataTransfer.files).map((file) => ({
+            file,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+        }));
 
-        const readEntries = async (entry) => {
-            return new Promise((resolve) => {
-                if (entry.isFile) {
-                    entry.file((file) => {
-                        resolve({
-                            name: file.name,
-                            type: "file",
-                            fullPath: entry.fullPath,
-                            file: file,
-                        });
-                    });
-                } else if (entry.isDirectory) {
-                    const dirReader = entry.createReader();
-                    const readAllEntries = () => {
-                        const entries = [];
-
-                        const read = () => {
-                            dirReader.readEntries(async (results) => {
-                                if (!results.length) {
-                                    const children = await Promise.all(
-                                        entries.map((ent) => readEntries(ent))
-                                    );
-                                    resolve({
-                                        name: entry.name,
-                                        type: "directory",
-                                        fullPath: entry.fullPath,
-                                        children,
-                                    });
-                                } else {
-                                    entries.push(...results);
-                                    read();
-                                }
-                            });
-                        };
-
-                        read();
-                    };
-                    readAllEntries();
-                }
-            });
-        };
-
-
-        const getAllFiles = async () => {
-            const promises = [];
-            for (let i = 0; i < items.length; i++) {
-                const entry = items[i].webkitGetAsEntry();
-                if (entry) {
-                    promises.push(readEntries(entry));
-                }
-            }
-            const results = await Promise.all(promises);
-            return results;
-        };
-
-        const allFiles = await getAllFiles();
-        setDroppedFiles([...droppedFiles, ...allFiles]);
-        console.log("Dropped files/folders:", allFiles);
+        setDroppedFiles([...droppedFiles, ...dropped]);
+        console.log("Dropped files:", dropped);
     };
 
     const handleDragOver = (e) => {
@@ -154,96 +48,108 @@ const Send = () => {
         setIsDragActive(false);
     };
 
+    const handleButtonClick = () => {
+        fileInputRef.current.click();
+    };
+
     return (
-        <div className="relative flex min-h-screen flex-col bg-white overflow-x-hidden" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
-            <div className="layout-container flex h-full grow flex-col">
-                <Header />
+        <div
+            className="relative flex min-h-screen flex-col bg-white overflow-x-hidden"
+            style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}
+        >
+            {/* Header */}
+            <Header />
 
-                <div className="px-6 md:px-40 flex flex-1 justify-center py-5">
-                    <div className="flex flex-col max-w-[960px] flex-1 ">
-                        <h2 className="text-[28px] font-bold leading-tight text-center pb-3 pt-10 my-5">
-                            Select files or folders to transfer
-                        </h2>
+            {/* Main Content */}
+            <div className="px-6 md:px-40 flex flex-1 justify-center py-5">
+                <div className="flex flex-col max-w-[960px] flex-1">
+                    <h2 className="text-[#111418] text-[28px] font-bold text-center pb-3 pt-5">
+                        Send files
+                    </h2>
+                    <p className="text-[#111418] text-base font-normal text-center pb-3">
+                        Select files to send. A code will be generated for the recipient to use.
+                    </p>
 
-                        {/* Drop and Select Area */}
-                        <div className="flex flex-col p-4">
+                    {/* Drop Area */}
+                    <div className="flex flex-col px-4 py-0 ">
+                        <div
+                            onDrop={handleDrop}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            className={`flex flex-col items-center gap-6 rounded-xl px-6 py-14 transition-all duration-200 ${isDragActive ? "bg-blue-50" : ""
+                                }`}
+                        >
                             <div
-                                onDrop={handleDrop}
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                className={`transition-all duration-200 flex flex-col items-center gap-6 rounded-lg border-2 border-dashed px-6 py-14 
-                                ${isDragActive ? "border-blue-400 bg-blue-50" : "border-[#dbe0e6]"}`}
+                                className="bg-center bg-no-repeat aspect-video bg-cover rounded-xl w-full max-w-[360px]"
+                                style={{
+                                    backgroundImage:
+                                        "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBsMr95vsXhxrMzy1o16-k569pgJmc0F8cGgR6JtSXFajOcZIVAqfa0CdNWoIfUqEg6uldo4DTbsk8BPe7jS97ZDyVy3G1l-pD8lzoevZrg1ebCb3C4wjKX4R0xZQmXZgeltZyt51j7GZPIKqPshPw3NPrjvzFb9VulajdYo9i9E0HwbIhlyDZLY4oYPBhn_BRg7av8ZLB5nYQEGn8JOWzoq1RzKXuXvlbdWeMAK4Nis-Kf7O7rEpvYrBeZ9G10wP-n5E6uQbVJ-3M')",
+                                }}
+                            ></div>
+
+                            <div className="flex max-w-[480px] flex-col items-center gap-2">
+                                <p className="text-[#111418] text-lg font-bold text-center">
+                                    Drag and drop files here
+                                </p>
+                                <p className="text-[#111418] text-sm font-normal text-center">
+                                    Or click below to select files
+                                </p>
+                            </div>
+
+                            {/* Hidden File Input */}
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                multiple
+                                onChange={handleFileInputChange}
+                            />
+
+                            {/* Select Files Button */}
+                            <button
+                                onClick={handleButtonClick}
+                                className="cursor-pointer flex min-w-[84px] max-w-[480px] items-center justify-center rounded-xl h-10 px-4 bg-[#f0f2f5] text-[#111418] text-sm font-bold"
                             >
-                                <div className="flex flex-col items-center gap-2 max-w-[480px]">
-                                    <UploadCloud size={40} className="text-black animate-bounce" />
-                                    <p className="text-lg font-bold text-center">Drag and drop files here</p>
-                                    <p className="text-sm font-normal text-center">Or click to select files from your computer</p>
+                                Select Files
+                            </button>
+                            {droppedFiles.length > 0 && (
+                                <div className="flex px-4 justify-center">
+                                    <button
+                                        onClick={() =>
+                                            navigate("/sendinfo", { state: { fromSend: true } })
+                                        }
+                                        className="cursor-pointer flex min-w-[84px] max-w-[480px] items-center justify-center rounded-xl h-10 px-4 bg-[#3d98f4] text-white text-sm font-bold"
+                                    >
+                                        Generate Code
+                                    </button>
                                 </div>
-
-                                <div className="md:flex space-x-10">
-                                    <input
-                                        type="file"
-                                        id="files"
-                                        name="files"
-                                        className="hidden"
-                                        multiple
-                                        onChange={handleFileInputChange}
-                                    />
-
-                                    <label htmlFor="files">
-                                        <p className="flex items-center h-10 px-4 bg-[#f0f2f5] text-[#111418] text-sm font-bold rounded-lg cursor-pointer">
-                                            Select Files
+                            )}
+                        </div>
+                    </div>
+                    {/* Selected Files Listing */}
+                    {droppedFiles.length > 0 && (
+                        <div className="mt-4 px-4">
+                            <h3 className="text-md font-bold mb-2">Selected Files:</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {droppedFiles.map((file, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all"
+                                    >
+                                        <p className="font-semibold line-clamp-1">{file.name}</p>
+                                        <p className="text-xs text-gray-500">
+                                            {(file.size / 1024).toFixed(2)} KB
                                         </p>
-                                    </label>
-
-                                    <input
-                                        type="file"
-                                        id="folder"
-                                        name="folder"
-                                        className="hidden"
-                                        multiple
-                                        webkitdirectory="true"
-                                        directory="true"
-                                        onChange={handleFolderInputChange}
-                                    />
-
-                                    <label htmlFor="folder">
-                                        <p className="flex items-center h-10 px-4 bg-[#f0f2f5] text-[#111418] text-sm font-bold rounded-lg cursor-pointer">
-                                            Select Folders
-                                        </p>
-                                    </label>
-
-                                    {droppedFiles.length > 0 && (
-                                        <button
-                                            onClick={() => navigate('/sendinfo', { state: { fromSend: true } })}
-                                            className="flex items-center h-10 px-4 bg-black hover:bg-gray-600 text-white text-sm font-bold rounded-lg transition-all"
-                                        >
-                                            Send
-                                        </button>
-                                    )}
-                                </div>
+                                        <p className="text-xs text-gray-500">{file.type}</p>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-
-                        {/* Show Selected Files */}
-                        {droppedFiles.length > 0 && (
-                            <div className="mt-4 px-4">
-                                <h3 className="text-md font-bold">Selected Files:</h3>
-                                <ul className="text-sm list-disc list-inside">
-                                    {droppedFiles.map((file, idx) => (
-                                        <li key={idx}>{`/${file.fullPath || file.name}`}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        <p className="text-[#60758a] text-sm text-center px-4 pt-1 pb-3">
-                            Files are transferred directly between devices and are not stored on our servers.
-                        </p>
-                    </div>
+                    )}
                 </div>
             </div>
 
+            {/* Footer */}
             <Footer />
         </div>
     );

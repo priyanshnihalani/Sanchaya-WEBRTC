@@ -9,7 +9,8 @@ function QRCodeGenerator({ value }) {
                     value={value}
                     size={256}
                     bgColor="#ffffff"
-                    fgColor="#000000"
+                    fgColor="#000"
+                    imageRendering={"/logo.svg"}
                     level="H"
                 />
             </div>

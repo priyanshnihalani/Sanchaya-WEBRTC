@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 // Mock Header and Footer components for demo
 import Header from "../Header/Header";
@@ -7,8 +7,11 @@ import QrScanner from "qr-scanner";
 import { useSocket } from "../context/SocketContext";
 import { useUserId } from "../context/UserIdContext";
 import { NotificationToReceiver } from "../Components/Notification";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, m } from "framer-motion";
 import CryptoJS from "crypto-js";
+import { useWebRTC } from "../context/WebRTCContext";
+import { useNavigate } from "react-router-dom";
+
 
 const Receive = () => {
 
@@ -34,13 +37,14 @@ const Receive = () => {
     const [receiverReadyMap, setReceiverReadyMap] = useState({});
     const [recvStatus, setRecvStatus] = useState("");
     const [transferError, setTransferError] = useState(false);
-
-
-
+    const { instance, createConnection, completed } = useWebRTC();
+    const [metaData, setMetaData] = useState(null)
+    const navigate = useNavigate()
 
     useEffect(() => {
         console.log(socket)
     }, [])
+
     // Start camera for QR scanning
     const startCamera = async () => {
         try {
@@ -118,14 +122,13 @@ const Receive = () => {
 
 
     useEffect(() => {
-        console.log("Socket inside useEffect:", socket);  // should print a valid socket
+        console.log("Socket inside useEffect:", socket);
 
-        function handleConnectionResponse({ senderId, approved, fileNames }) {
+        function handleConnectionResponse({ senderId, approved }) {
             console.log("Received in client:", { senderId, approved }); // check if triggered
 
             if (approved) {
                 console.log("Approved!");
-                setFileNames(fileNames)
             }
             setSenderId(senderId);
             setApproval(approved);
@@ -145,6 +148,11 @@ const Receive = () => {
         };
     }, [socket]);
 
+    useEffect(() => {
+        if (metaData) {
+            navigate('/file-receiver', { state: { metaData } })
+        }
+    }, [socket, metaData])
 
 
     useEffect(() => {
@@ -158,6 +166,7 @@ const Receive = () => {
             return () => clearTimeout(timer);
         }
     }, [senderId]);
+
 
     function decryptToArrayBuffer(encryptedBase64, secretKey) {
         const decrypted = CryptoJS.AES.decrypt(encryptedBase64, secretKey);
@@ -239,7 +248,7 @@ const Receive = () => {
 
                 const decryptedBuffer = decryptToArrayBuffer(chunk, secretCryptoKey);
                 const binaryChunk = new Uint8Array(decryptedBuffer);
-                
+
                 await writableRef.current.write(binaryChunk);
                 recvSizeRef.current += binaryChunk.length;
 
@@ -356,6 +365,49 @@ const Receive = () => {
     }, [socket, code, userId.userName, recvProgressList]);
 
 
+    useEffect(() => {
+
+        if (!instance) {
+            createConnection(); // without files
+        }
+
+    }, [socket, createConnection])
+
+
+    const handleOffer = useCallback(async ({ offer, from }) => {
+        try {
+            console.log(from)
+            setSenderId(from)
+            const metaData = await instance?.handleOffer(offer, from)
+            setMetaData(metaData)
+            console.log(metaData)
+
+        } catch (err) {
+            console.error('Error handling offer:', err);
+        }
+    }, [socket, instance]);
+
+    useEffect(() => {
+        socket.on('webrtc-offer', handleOffer);
+        return () => {
+            socket.off('webrtc-offer', handleOffer);
+        };
+    }, [socket, instance, handleOffer]);
+
+
+
+
+    useEffect(() => {
+        const handleCandidate = ({ candidate }) => {
+            instance?.addIceCandidate(candidate);
+        }
+
+        socket.on('webrtc-candidate', handleCandidate);
+
+        return () => {
+            socket.off('webrtc-candidate', handleCandidate);
+        }
+    }, [socket, instance]);
 
 
     const handleConnect = () => {
@@ -448,9 +500,17 @@ const Receive = () => {
                 <div className="w-full max-w-[512px] py-5 flex flex-col space-y-10">
                     <div className="flex justify-between gap-3 p-4">
                         <p className="text-[#111418] text-[32px] font-bold">
-                            Connect with others
+                            Enter ID or Scan QR
                         </p>
                     </div>
+
+                    <div
+                        className="w-full bg-center bg-no-repeat bg-cover aspect-video rounded-xl  flex-1"
+                        style={{
+                            backgroundImage:
+                                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDRwSLubOg8NifL88QnKVGS8vhhTPm3OLIdIt7xACvra36oxD9JFmoQpCowGnq5YQuBAdYlWhtbvviQIqQiNPscGjvPS6c6ER0py8e9xEDO7NUkdtCNd60YemIgtVOSmp8uh-ngjcKiiqR-mJ_sgiVNMu7GTJP8dVLC4fWcR9N6E94y_q32OKyScwYMqa6SbvtSYfKkGmrIVg86cSg_Vew6aUEGxFOR10jvOlz_FqrfVGN-kzdSqkObih_IxiVd-21l3AD4fDSYYUk')",
+                        }}
+                    ></div>
 
                     {/* Tab Switcher */}
                     <div className="pb-3 border-b border-[#dbe0e6] px-4 gap-8 flex">
@@ -482,18 +542,15 @@ const Receive = () => {
                                     <input
                                         type="text"
                                         placeholder="Enter User-code"
-                                        className="form-input w-full rounded-lg border border-[#dbe0e6] bg-white p-[15px] text-base placeholder:text-[#60758a] h-14 focus:outline-none focus:border-[#111418]"
+                                        className="form-input w-full rounded-lg border border-[#dbe0e6] bg-white p-[15px] text-base placeholder:text-[#60758a] h-12 focus:outline-none focus:border-[#111418]"
                                         value={code}
                                         onChange={(e) => setCode(e.target.value)}
                                         maxLength={30}
                                     />
                                 </label>
-                            </div>
-
-                            <div className="flex px-4 py-3 justify-end">
                                 <button
                                     onClick={handleConnect}
-                                    className="h-10 px-4 rounded-lg bg-[#111418] hover:bg-[#2a2f36] text-white text-sm font-bold cursor-pointer transition-colors"
+                                    className="h-12 px-4 rounded-lg bg-[#f0f2f5] text-[#111418] text-sm font-bold cursor-pointer transition-colors"
                                 >
                                     Connect
                                 </button>
@@ -524,60 +581,8 @@ const Receive = () => {
                             <p className="text-gray-600 text-sm text-center">
                                 {isScanning ? "Scanning for QR code..." : "Camera access needed"}
                             </p>
-
                         </div>
                     )}
-                    <div className="p-4 w-full max-w-3xl mx-auto">
-                        <h1 className="text-xl font-semibold border-b pb-2">Files & Folders</h1>
-
-                        <div className="space-y-6 mt-6">
-                            {fileNames.length > 0 ? (
-                                fileNames.map((name, index) => {
-                                    const fileProgress = recvProgressList.find((f) => f.fileName === name);
-                                    const percent = fileProgress?.percent || 0;
-
-                                    return (
-                                        <div
-                                            key={index}
-                                            className="relative overflow-hidden rounded-xl border shadow-sm hover:shadow-md transition"
-                                        >
-                                            {/* ✅ Background fill */}
-                                            <div
-                                                className={`absolute top-0 left-0 h-full transition-all duration-500 ${fileProgress?.status === "error"
-                                                    ? "bg-red-200"
-                                                    : "bg-green-100"
-                                                    }`}
-                                                style={{ width: `${percent}%` }}
-                                            ></div>
-
-                                            {/* ✅ Foreground content */}
-                                            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between p-4 space-y-2 sm:space-y-0">
-                                                <p className="text-gray-800 font-medium break-all">./{name}</p>
-
-                                                <div className="flex space-x-4">
-                                                    <button
-                                                        className="border-2 hover:bg-green-100 px-4 py-1 rounded-full text-sm font-medium"
-                                                        onClick={() => handleAccept(name)}
-                                                    >
-                                                        Accept
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleReject(name)}
-                                                        className="border-2 hover:bg-red-100 px-4 py-1 rounded-full text-sm font-medium"
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <p className="text-gray-500 italic">No files to show</p>
-                            )}
-                        </div>
-                    </div>
-
                 </div>
 
                 <AnimatePresence>
@@ -593,13 +598,12 @@ const Receive = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
-
-
             </div>
 
             <Footer />
         </div>
     );
+
 };
 
 export default Receive;

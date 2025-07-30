@@ -4,7 +4,7 @@ function Footer() {
     const date = new Date()
     
     return (
-        <footer className="w-full bg-gray-50 text-center py-8 border-t" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
+        <footer className="w-full bg-gray-0 text-center py-8 " style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
             <div className="max-w-6xl mx-auto flex flex-col gap-6 px-4">
                 <div className="flex flex-col sm:flex-row justify-center sm:justify-around gap-4 text-sm text-gray-600">
                     <Link to={'/privacypolicy'} className="hover:underline">Privacy Policy</Link>
