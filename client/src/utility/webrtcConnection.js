@@ -410,7 +410,8 @@ class WebRTCConnection {
                     }
 
 
-                    const adaptiveTimeout = Math.min(Math.max(estimatedSeconds * 2 * 1000, 10000), 60000); // 10–60s
+                    const adaptiveTimeout = Math.min(Math.max(estimatedSeconds * 2 * 1000, 60000), 1200000); // 60–120s
+
                     this.chunkTimeout = setTimeout(() => {
                         console.error(" Chunk delay exceeded adaptive timeout. Transfer might be stuck.");
                         this.setHasError(prev => ({ ...prev, [this.currentFileName]: true }))
