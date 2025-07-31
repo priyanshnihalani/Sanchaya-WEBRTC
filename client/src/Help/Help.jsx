@@ -7,7 +7,7 @@ function Help() {
     return (
         <div
             className="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden"
-             style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}
+            style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}
         >
             <Header />
             <div className="layout-container flex h-full grow flex-col">
@@ -34,18 +34,18 @@ function Help() {
                                 {
                                     question: "How does the file transfer work?",
                                     answer:
-                                        "Our service uses peer-to-peer technology to directly transfer files between devices without storing them on a server. This ensures your files remain private and secure.",
+                                        "FileDrop uses peer-to-peer (P2P) technology via WebRTC to establish a direct connection between the sender and receiver. Once connected, files are transferred securely without going through any server, ensuring full privacy.",
                                     open: true,
                                 },
                                 {
                                     question: "Is there a limit to the file size I can transfer?",
                                     answer:
-                                        "Our service uses peer-to-peer technology to directly transfer files between devices without storing them on a server. This ensures your files remain private and secure.",
+                                        "There is no enforced file size limit by FileDrop itself, but performance may vary based on your internet connection and device memory. For smoother transfers, we recommend sending files below 2 GB per session.",
                                 },
                                 {
                                     question: "What happens if the connection is interrupted during a transfer?",
                                     answer:
-                                        "Our service uses peer-to-peer technology to directly transfer files between devices without storing them on a server. This ensures your files remain private and secure.",
+                                        "If the connection drops, the transfer will stop immediately to prevent data corruption. You can retry sending the file once the connection is restored. Future versions will include resumable transfers.",
                                 },
                             ].map((item, index) => (
                                 <details
@@ -71,6 +71,7 @@ function Help() {
                                 </details>
                             ))}
                         </div>
+
 
                         {/* Contact Section */}
                         <h2 className="text-[#111418] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">

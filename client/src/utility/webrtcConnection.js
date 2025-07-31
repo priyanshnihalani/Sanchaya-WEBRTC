@@ -207,50 +207,135 @@ class WebRTCConnection {
         }
     }
 
-
     async sendFile(file, setPercent) {
         this.currentFileSize = file.size;
-        const chunkSize = 256 * 1024; // 512 KB chunks
-        const maxBuffer = 16 * 1024 * 1024; // 16 MB max DataChannel buffer
+
+        let chunkSize = 512 * 1024; // Start with 512 KB
+        const minChunkSize = 64 * 1024;   // Minimum 64 KB
+        const maxChunkSize = 512 * 1024;  // Maximum 512 KB
+
+        const maxBuffer = 8 * 1024 * 1024; // 8 MB buffer limit
         let offset = 0;
 
-        const waitForBuffer = () => new Promise((resolve) => {
+        const waitForBuffer = () => new Promise(resolve => {
             const interval = setInterval(() => {
                 if (this.dataChannel.bufferedAmount < maxBuffer) {
                     clearInterval(interval);
                     resolve();
                 }
-            }, 50); // check every 50ms
+            }, 50);
         });
 
-        // Start sending
         while (offset < file.size) {
-            const chunk = file.slice(offset, offset + chunkSize);        // Create file chunk
-            await waitForBuffer();                                       // Wait for DataChannel buffer to clear
-            const buffer = await chunk.arrayBuffer(); 
-            console.log(this.dataChannel.bufferedAmountLowThreshold)  
-            console.log(this.dataChannel.bufferedAmount)                     // Read chunk into buffer
+            await waitForBuffer();
+
+            // Dynamically adjust chunk size based on current buffer usage
+            const usageRatio = this.dataChannel.bufferedAmount / maxBuffer;
+
+            if (usageRatio > 0.75 && chunkSize > minChunkSize) {
+                chunkSize = Math.floor(chunkSize / 2); // Reduce size if buffer is full
+                console.log(`🔻 Buffer high. Reducing chunk size to ${chunkSize / 1024} KB`);
+            } else if (usageRatio < 0.25 && chunkSize < maxChunkSize) {
+                chunkSize = Math.min(maxChunkSize, chunkSize * 2); // Increase if buffer is very free
+                console.log(`🔺 Buffer low. Increasing chunk size to ${chunkSize / 1024} KB`);
+            }
+
+            const chunk = file.slice(offset, offset + chunkSize);
+            const buffer = await chunk.arrayBuffer();
 
             if (this.dataChannel.readyState !== "open") {
                 console.error("DataChannel is closed. Aborting.");
                 return;
             }
 
-            this.dataChannel.send(buffer);                               // Send buffer over WebRTC
+            this.dataChannel.send(buffer);
             offset += buffer.byteLength;
 
-            // Update progress
             const percent = Math.round((offset / file.size) * 100);
             setPercent(percent);
-            console.log(`Sending: ${percent}%`);
+            console.log(`Sending: ${percent}% (${chunkSize / 1024} KB chunk)`);
         }
 
-        // End-of-file signal
         if (this.dataChannel.readyState === "open") {
             this.dataChannel.send("EOF");
             console.log("✅ File transfer complete");
         }
     }
+
+
+    async sendFile(file, setPercent) {
+        this.currentFileSize = file.size;
+
+        // Predefined chunk sizes (step-wise)
+        const chunkSizes = [16 * 1024, 32 * 1024, 64 * 1024, 128 * 1024, 256 * 1024]; // in increasing order
+        let chunkIndex = 2; // Start with 128 KB
+
+        const maxBuffer = 16 * 1024 * 1024;  // 16 MB total
+        const safeMargin = 256 * 1024;       // Leave 256 KB margin
+        let offset = 0;
+
+        const waitForBuffer = () => new Promise(resolve => {
+            const interval = setInterval(() => {
+                if (this.dataChannel.bufferedAmount < (maxBuffer - safeMargin)) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 30);
+        });
+
+        while (offset < file.size) {
+            await waitForBuffer();
+
+            const usageRatio = this.dataChannel.bufferedAmount / maxBuffer;
+
+            // 📉 Reduce chunk size if buffer is too full
+            if (usageRatio > 0.75 && chunkIndex > 0) {
+                chunkIndex--;
+                console.log(`🔻 Buffer high. Reducing chunk size to ${chunkSizes[chunkIndex] / 1024} KB`);
+            }
+
+            // 📈 Increase chunk size if buffer is very free
+            else if (usageRatio < 0.25 && chunkIndex < chunkSizes.length - 1) {
+                chunkIndex++;
+                console.log(`🔺 Buffer low. Increasing chunk size to ${chunkSizes[chunkIndex] / 1024} KB`);
+            }
+
+            const chunkSize = chunkSizes[chunkIndex];
+            const chunk = file.slice(offset, offset + chunkSize);
+            const buffer = await chunk.arrayBuffer();
+
+            if (this.dataChannel.readyState !== "open") {
+                console.error("❌ DataChannel is closed. Aborting.");
+                return;
+            }
+
+            try {
+                this.dataChannel.send(buffer);
+            } catch (err) {
+                console.error("❌ Send failed:", err);
+                if (chunkIndex > 0) {
+                    chunkIndex--; // Drop to smaller size
+                    console.warn(`🔁 Dropping to ${chunkSizes[chunkIndex] / 1024} KB and retrying...`);
+                }
+                continue;
+            }
+
+            offset += buffer.byteLength;
+
+            const percent = Math.round((offset / file.size) * 100);
+            setPercent(percent);
+            console.log(`📤 Sending: ${percent}% (${chunkSize / 1024} KB)`);
+        }
+
+        if (this.dataChannel.readyState === "open") {
+            this.dataChannel.send("EOF");
+            console.log("✅ File transfer complete");
+        }
+    }
+
+
+
+
 
 
     receiveMetaData(filesArray) {
