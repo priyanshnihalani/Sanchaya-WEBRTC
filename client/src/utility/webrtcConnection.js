@@ -88,7 +88,7 @@ class WebRTCConnection {
         } catch {
 
             console.log("🔸Binary chunk received", this.currentFileSize);
-            await this.handleReceiveMessage(data, this.writableRef, this.currentFileSize, (p) => this.updatePercent(this.currentFileName, p))
+            await this.handleReceiveMessage(data, this.writableRef, this.currentFileSize, (p) => this.updatePercent(this.currentFileName, p), this.formatTime)
 
         }
     }
@@ -320,7 +320,7 @@ class WebRTCConnection {
     }
 
 
-    async handleReceiveMessage(data, writableRef = null, fileSize, setPercent) {
+    async handleReceiveMessage(data, writableRef = null, fileSize, setPercent, formatTime) {
         try {
             let percent = 0
             const startTime = Date.now();
