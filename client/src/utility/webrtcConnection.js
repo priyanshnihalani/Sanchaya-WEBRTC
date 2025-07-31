@@ -1,6 +1,6 @@
 class WebRTCConnection {
 
-    constructor(socket, files = null, setCompleted, setChunkData, writableRef = null, updatePercent, setEstimatedTimes) {
+    constructor(socket, files = null, setCompleted, setChunkData, writableRef = null, updatePercent, setEstimatedTimes, setHasError) {
         this.socket = socket;
         this.files = files;
         this.setChunkData = setChunkData;
@@ -11,6 +11,8 @@ class WebRTCConnection {
         this.recvSize = 0;
         this.recvTotal = 0;
         this.setEstimatedTimes = setEstimatedTimes
+        this.chunkTimeout;
+        this.setHasError = setHasError
 
         this.pc = new RTCPeerConnection({
             iceServers: [
@@ -222,38 +224,59 @@ class WebRTCConnection {
     async sendFile(file, setPercent, formatTime) {
         this.currentFileSize = file.size;
 
-        // Predefined chunk sizes (step-wise)
-        const chunkSizes = [16 * 1024, 32 * 1024, 64 * 1024, 128 * 1024, 256 * 1024]; // in increasing order
-        let chunkIndex = 2; // Start with 128 KB
+        const chunkSizes = [16 * 1024, 32 * 1024, 64 * 1024, 128 * 1024, 256 * 1024];
+        let chunkIndex = 2; // Start with 64KB
 
-        const maxBuffer = 16 * 1024 * 1024;  // 16 MB total
-        const safeMargin = 256 * 1024;       // Leave 256 KB margin
+        const maxBuffer = 16 * 1024 * 1024;
+        const safeMargin = 256 * 1024;
+
         let offset = 0;
+        const startTime = Date.now();
+        let retryAttempts = 0;
+        const maxRetries = 3;
 
-        const waitForBuffer = () => new Promise(resolve => {
+        const waitForBuffer = () => new Promise((resolve, reject) => {
+            let waited = 0;
+            const timeoutLimit = 10000; // 10s max buffer wait
             const interval = setInterval(() => {
                 if (this.dataChannel.bufferedAmount < (maxBuffer - safeMargin)) {
                     clearInterval(interval);
                     resolve();
+                } else {
+                    waited += 30;
+                    if (waited > timeoutLimit) {
+                        clearInterval(interval);
+                        reject(new Error("Buffer stuck too long"));
+                    }
                 }
             }, 30);
         });
 
-        const startTime = Date.now();
-
         while (offset < file.size) {
-            await waitForBuffer();
+            try {
+                await waitForBuffer();
+            } catch (err) {
+                retryAttempts++;
+                console.warn(`Send buffer stuck. Retry attempt ${retryAttempts}`);
+                if (retryAttempts >= maxRetries) {
+                    console.error("Sending failed: buffer never drained.");
+                    this.setHasError(prev => ({ ...prev, [file.name]: true }))
+
+
+                    return;
+                } else {
+                    continue;
+                }
+            }
+
+            retryAttempts = 0; // reset if buffer drained successfully
 
             const usageRatio = this.dataChannel.bufferedAmount / maxBuffer;
 
-            // 📉 Reduce chunk size if buffer is too full
             if (usageRatio > 0.75 && chunkIndex > 0) {
                 chunkIndex--;
                 console.log(`🔻 Buffer high. Reducing chunk size to ${chunkSizes[chunkIndex] / 1024} KB`);
-            }
-
-            // 📈 Increase chunk size if buffer is very free
-            else if (usageRatio < 0.25 && chunkIndex < chunkSizes.length - 1) {
+            } else if (usageRatio < 0.25 && chunkIndex < chunkSizes.length - 1) {
                 chunkIndex++;
                 console.log(`🔺 Buffer low. Increasing chunk size to ${chunkSizes[chunkIndex] / 1024} KB`);
             }
@@ -263,17 +286,24 @@ class WebRTCConnection {
             const buffer = await chunk.arrayBuffer();
 
             if (this.dataChannel.readyState !== "open") {
-                console.error("❌ DataChannel is closed. Aborting.");
+                console.error("DataChannel is closed. Aborting.");
+                this.hasError = true;
+
+                this.updatePercent?.(file.name, 0);
+                this.setEstimatedTimes?.(prev => ({
+                    ...prev,
+                    [file.name]: "Connection lost",
+                }));
                 return;
             }
 
             try {
                 this.dataChannel.send(buffer);
             } catch (err) {
-                console.error("❌ Send failed:", err);
+                console.error("Send failed:", err);
                 if (chunkIndex > 0) {
-                    chunkIndex--; // Drop to smaller size
-                    console.warn(`🔁 Dropping to ${chunkSizes[chunkIndex] / 1024} KB and retrying...`);
+                    chunkIndex--;
+                    console.warn(` Dropping to ${chunkSizes[chunkIndex] / 1024} KB and retrying...`);
                 }
                 continue;
             }
@@ -282,10 +312,10 @@ class WebRTCConnection {
 
             const percent = Math.round((offset / file.size) * 100);
             setPercent(percent);
-            console.log(`📤 Sending: ${percent}% (${chunkSize / 1024} KB)`);
+            console.log(`Sending: ${percent}% (${chunkSize / 1024} KB)`);
 
-            const elapsedTime = (Date.now() - startTime) / 1000; // seconds
-            const speed = offset / elapsedTime; // bytes/sec
+            const elapsedTime = (Date.now() - startTime) / 1000;
+            const speed = offset / elapsedTime;
             const remainingBytes = file.size - offset;
             const estimatedSeconds = remainingBytes / speed;
 
@@ -294,17 +324,18 @@ class WebRTCConnection {
                     ...prev,
                     [file.name]: formatTime(estimatedSeconds)
                 }));
-
             } else {
-                console.log("⏳ Estimated time remaining:", formatTime(estimatedSeconds));
+                console.log("Estimated time remaining:", formatTime(estimatedSeconds));
             }
         }
 
         if (this.dataChannel.readyState === "open") {
             this.dataChannel.send("EOF");
-            console.log("✅ File transfer complete");
+            console.log(" File transfer complete");
         }
     }
+
+
 
 
     receiveMetaData(filesArray) {
@@ -322,10 +353,14 @@ class WebRTCConnection {
 
     async handleReceiveMessage(data, writableRef = null, fileSize, setPercent, formatTime) {
         try {
-            let percent = 0
+            let percent = 0;
+
+            // Reset adaptive timeout tracking
+            if (this.chunkTimeout) clearTimeout(this.chunkTimeout);
+
             const startTime = Date.now();
 
-            console.log(fileSize)
+            // Handle EOF: close stream and reset state
             if (data === "EOF") {
                 if (writableRef?.current) {
                     await writableRef.current.close();
@@ -340,40 +375,55 @@ class WebRTCConnection {
                 return;
             }
 
+            // Handle binary chunk write
             if (writableRef?.current) {
                 const binaryChunk = new Uint8Array(data);
 
                 await writableRef.current.write(binaryChunk);
-                console.log(data.byteLength)
+                console.log("Chunk size:", data.byteLength);
                 this.recvSize += data.byteLength || data.size;
 
-
+                // Set total file size once
                 if (!this.recvTotal && fileSize) {
                     this.recvTotal = fileSize;
-                    console.log(this.recvTotal, fileSize)
+                    console.log("File size set:", this.recvTotal);
                 }
 
-
-                console.log(this.recvTotal)
+                // Calculate progress
                 if (this.recvTotal > 0) {
-                    console.log(this.recvTotal)
                     percent = Math.round((this.recvSize / this.recvTotal) * 100);
-
                     setPercent(percent);
+
                     const elapsedTime = (Date.now() - startTime) / 1000; // seconds
                     const speed = this.recvSize / elapsedTime; // bytes/sec
                     const remainingBytes = this.recvTotal - this.recvSize;
                     const estimatedSeconds = remainingBytes / speed;
 
+                    //  Update estimated time in UI
                     if (this.setEstimatedTimes) {
                         this.setEstimatedTimes(prev => ({
                             ...prev,
-                            [this.currentFileName]: formatTime(estimatedSeconds)
+                            [this.currentFileName]: formatTime(estimatedSeconds),
                         }));
-
                     } else {
-                        console.log("⏳ Estimated time remaining:", formatTime(estimatedSeconds));
+                        console.log("Estimated time remaining:", formatTime(estimatedSeconds));
                     }
+
+
+                    const adaptiveTimeout = Math.min(Math.max(estimatedSeconds * 2 * 1000, 10000), 60000); // 10–60s
+                    this.chunkTimeout = setTimeout(() => {
+                        console.error(" Chunk delay exceeded adaptive timeout. Transfer might be stuck.");
+                        this.setHasError(prev => ({ ...prev, [this.currentFileName]: true }))
+
+                        this.updatePercent(this.currentFileName, 0);
+
+                        // Optional: Abort the writable stream
+                        if (writableRef?.current?.abort) {
+                            writableRef.current.abort();
+                        }
+
+                    }, adaptiveTimeout);
+
                     console.log(`Receiving progress: ${percent}%`);
                 }
             } else {
@@ -383,6 +433,7 @@ class WebRTCConnection {
             console.error("Error handling received message:", error);
         }
     }
+
 
     closeConnection() {
         if (this.dataChannel) {

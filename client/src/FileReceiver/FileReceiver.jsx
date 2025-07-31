@@ -2,18 +2,21 @@ import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import { useLocation } from "react-router-dom";
 import { useWebRTC } from "../context/WebRTCContext";
-import { useRef } from "react";
+import { useState } from "react";
+
 
 const FileReceiver = () => {
   const location = useLocation();
-  const metaData = location?.state?.metaData || [];
+  const [metaData, setMetaData] = useState(location?.state?.metaData || []);
+
 
   const {
     instance,
     writableRef,
     currentFileRef,
     percentMap,
-    estimatedTimes
+    estimatedTimes,
+    hasError
   } = useWebRTC();
 
   function formatBytes(bytes) {
@@ -32,7 +35,7 @@ const FileReceiver = () => {
       try {
         await writableRef.current.close();
         await new Promise((r) => setTimeout(r, 100));
-        console.log("✅ Previous stream closed.");
+        console.log("Previous stream closed.");
       } catch (err) {
         console.warn("Writable already closed:", err.message);
       }
@@ -56,6 +59,11 @@ const FileReceiver = () => {
       console.error("Error during writable setup:", err);
     }
   }
+
+  function handleReject(name) {
+  const newMetaData = metaData.filter((item) => item.name !== name);
+  setMetaData(newMetaData);
+}
 
   return (
     <div className="relative flex min-h-screen flex-col bg-white overflow-x-hidden">
@@ -87,13 +95,13 @@ const FileReceiver = () => {
                     <button className="underline cursor-pointer" onClick={() => handleAcceptFile(item)}>
                       accept
                     </button>
-                    <button className="underline cursor-pointer">Reject</button>
+                    <button className="underline cursor-pointer" onClick={() => handleReject(item.name)}>Reject</button>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                   <div className="w-full sm:w-[200px] bg-[#dde0e3] rounded-sm overflow-hidden">
-                    <div className="h-1 bg-[#121416]" style={{ width: `${percentMap[item.name] || 0}%` }} />
+                    <div className={`h-1 ${hasError[item.name] ? 'bg-red-500' : 'bg-[#121416]'}`} style={{ width: `${percentMap[item.name] || 0}%` }} />
                   </div>
                   <p className="text-sm font-medium text-[#121416] min-w-[40px] text-right">
                     {percentMap[item.name] || 0}%

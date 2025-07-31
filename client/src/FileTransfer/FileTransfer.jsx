@@ -9,7 +9,8 @@ const FileTransfer = () => {
 
   const {
     percentMap,
-    estimatedTimes
+    estimatedTimes,
+    hasError
   } = useWebRTC();
 
   function formatBytes(bytes) {
@@ -55,7 +56,8 @@ const FileTransfer = () => {
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-full sm:w-[88px] bg-[#dde0e3] rounded-sm overflow-hidden">
                     <div
-                      className="h-1 bg-[#121416]"
+                      className={`h-1 ${hasError[item.name] ? 'bg-red-500' : 'bg-[#121416]'}`}
+
                       style={{ width: `${percentMap[item.name] || 0}%` }}
                     />
                   </div>
