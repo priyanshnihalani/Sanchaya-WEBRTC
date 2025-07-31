@@ -368,7 +368,7 @@ class WebRTCConnection {
                     if (this.setEstimatedTimes) {
                         this.setEstimatedTimes(prev => ({
                             ...prev,
-                            [file.name]: formatTime(estimatedSeconds)
+                            [this.currentFileName]: formatTime(estimatedSeconds)
                         }));
 
                     } else {
