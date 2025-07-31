@@ -31,7 +31,8 @@ class WebRTCConnection {
                     username: "174815294428829333",
                     credential: "TbGkxhTPVSbF87HXi3Pe1sDqnlo="
                 }
-            ]
+            ],
+            iceTransportPolicy: "all"
 
         });
 
