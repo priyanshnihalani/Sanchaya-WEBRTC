@@ -8,7 +8,8 @@ const FileTransfer = () => {
   const metaData = location?.state?.metaData
 
   const {
-    percentMap
+    percentMap,
+    estimatedTimes
   } = useWebRTC();
 
   function formatBytes(bytes) {
@@ -48,7 +49,7 @@ const FileTransfer = () => {
                 <div className="flex flex-col">
                   <p className="text-sm sm:text-base font-medium text-[#121416] truncate">{item.name}</p>
                   <p className="text-xs sm:text-sm text-[#6a7581]">
-                    {`${formatBytes(item.size)} | Estimated time remaining: ${item.time || 0}`}
+                    {`${formatBytes(item.size)} | Estimated time remaining: ${estimatedTimes[item.name] || 0}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">

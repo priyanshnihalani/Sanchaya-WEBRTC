@@ -12,7 +12,8 @@ const FileReceiver = () => {
     instance,
     writableRef,
     currentFileRef,
-    percentMap
+    percentMap,
+    estimatedTimes
   } = useWebRTC();
 
   function formatBytes(bytes) {
@@ -80,7 +81,7 @@ const FileReceiver = () => {
                 <div className="flex flex-col flex-1 min-w-0">
                   <p className="text-base font-medium text-[#121416] truncate">{item.name}</p>
                   <p className="text-sm text-[#6a7581]">
-                    {`${formatBytes(item.size)} | Estimated time remaining: ${item?.time || 0}`}
+                    {`${formatBytes(item.size)} | Estimated time remaining: ${estimatedTimes[item.name] || 0}`}
                   </p>
                   <div className="space-x-4 mt-2">
                     <button className="underline cursor-pointer" onClick={() => handleAcceptFile(item)}>

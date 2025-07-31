@@ -1,6 +1,6 @@
 class WebRTCConnection {
 
-    constructor(socket, files = null, setCompleted, setChunkData, writableRef = null, updatePercent) {
+    constructor(socket, files = null, setCompleted, setChunkData, writableRef = null, updatePercent, setEstimatedTimes) {
         this.socket = socket;
         this.files = files;
         this.setChunkData = setChunkData;
@@ -10,7 +10,7 @@ class WebRTCConnection {
         this.currentFileName = null;
         this.recvSize = 0;
         this.recvTotal = 0;
-
+        this.setEstimatedTimes = setEstimatedTimes
 
         this.pc = new RTCPeerConnection({
             iceServers: [
@@ -58,6 +58,13 @@ class WebRTCConnection {
                 console.log("user connected")
             }
         };
+    }
+
+    formatTime(seconds) {
+        if (isNaN(seconds) || !isFinite(seconds)) return "Calculating...";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}m ${secs}s`;
     }
 
     async handleIncomingMessage(data) {
@@ -202,69 +209,17 @@ class WebRTCConnection {
         if (file) {
             this.currentFileName = file.name
             this.currentFileSize = file.size
-            this.sendFile(file.file, (p) => this.updatePercent(file.name, p));
+            this.sendFile(file.file, (p) => this.updatePercent(file.name, p), this.formatTime);
         } else {
             console.warn("Requested file not found:", filename);
         }
     }
 
-    async sendFile(file, setPercent) {
-        this.currentFileSize = file.size;
-
-        let chunkSize = 512 * 1024; // Start with 512 KB
-        const minChunkSize = 64 * 1024;   // Minimum 64 KB
-        const maxChunkSize = 512 * 1024;  // Maximum 512 KB
-
-        const maxBuffer = 8 * 1024 * 1024; // 8 MB buffer limit
-        let offset = 0;
-
-        const waitForBuffer = () => new Promise(resolve => {
-            const interval = setInterval(() => {
-                if (this.dataChannel.bufferedAmount < maxBuffer) {
-                    clearInterval(interval);
-                    resolve();
-                }
-            }, 50);
-        });
-
-        while (offset < file.size) {
-            await waitForBuffer();
-
-            // Dynamically adjust chunk size based on current buffer usage
-            const usageRatio = this.dataChannel.bufferedAmount / maxBuffer;
-
-            if (usageRatio > 0.75 && chunkSize > minChunkSize) {
-                chunkSize = Math.floor(chunkSize / 2); // Reduce size if buffer is full
-                console.log(`🔻 Buffer high. Reducing chunk size to ${chunkSize / 1024} KB`);
-            } else if (usageRatio < 0.25 && chunkSize < maxChunkSize) {
-                chunkSize = Math.min(maxChunkSize, chunkSize * 2); // Increase if buffer is very free
-                console.log(`🔺 Buffer low. Increasing chunk size to ${chunkSize / 1024} KB`);
-            }
-
-            const chunk = file.slice(offset, offset + chunkSize);
-            const buffer = await chunk.arrayBuffer();
-
-            if (this.dataChannel.readyState !== "open") {
-                console.error("DataChannel is closed. Aborting.");
-                return;
-            }
-
-            this.dataChannel.send(buffer);
-            offset += buffer.byteLength;
-
-            const percent = Math.round((offset / file.size) * 100);
-            setPercent(percent);
-            console.log(`Sending: ${percent}% (${chunkSize / 1024} KB chunk)`);
-        }
-
-        if (this.dataChannel.readyState === "open") {
-            this.dataChannel.send("EOF");
-            console.log("✅ File transfer complete");
-        }
-    }
 
 
-    async sendFile(file, setPercent) {
+
+
+    async sendFile(file, setPercent, formatTime) {
         this.currentFileSize = file.size;
 
         // Predefined chunk sizes (step-wise)
@@ -283,6 +238,8 @@ class WebRTCConnection {
                 }
             }, 30);
         });
+
+        const startTime = Date.now();
 
         while (offset < file.size) {
             await waitForBuffer();
@@ -326,6 +283,21 @@ class WebRTCConnection {
             const percent = Math.round((offset / file.size) * 100);
             setPercent(percent);
             console.log(`📤 Sending: ${percent}% (${chunkSize / 1024} KB)`);
+
+            const elapsedTime = (Date.now() - startTime) / 1000; // seconds
+            const speed = offset / elapsedTime; // bytes/sec
+            const remainingBytes = file.size - offset;
+            const estimatedSeconds = remainingBytes / speed;
+
+            if (this.setEstimatedTimes) {
+                this.setEstimatedTimes(prev => ({
+                    ...prev,
+                    [file.name]: formatTime(estimatedSeconds)
+                }));
+
+            } else {
+                console.log("⏳ Estimated time remaining:", formatTime(estimatedSeconds));
+            }
         }
 
         if (this.dataChannel.readyState === "open") {
@@ -333,10 +305,6 @@ class WebRTCConnection {
             console.log("✅ File transfer complete");
         }
     }
-
-
-
-
 
 
     receiveMetaData(filesArray) {
@@ -355,6 +323,8 @@ class WebRTCConnection {
     async handleReceiveMessage(data, writableRef = null, fileSize, setPercent) {
         try {
             let percent = 0
+            const startTime = Date.now();
+
             console.log(fileSize)
             if (data === "EOF") {
                 if (writableRef?.current) {
@@ -390,7 +360,20 @@ class WebRTCConnection {
                     percent = Math.round((this.recvSize / this.recvTotal) * 100);
 
                     setPercent(percent);
+                    const elapsedTime = (Date.now() - startTime) / 1000; // seconds
+                    const speed = this.recvSize / elapsedTime; // bytes/sec
+                    const remainingBytes = this.recvTotal - this.recvSize;
+                    const estimatedSeconds = remainingBytes / speed;
 
+                    if (this.setEstimatedTimes) {
+                        this.setEstimatedTimes(prev => ({
+                            ...prev,
+                            [file.name]: formatTime(estimatedSeconds)
+                        }));
+
+                    } else {
+                        console.log("⏳ Estimated time remaining:", formatTime(estimatedSeconds));
+                    }
                     console.log(`Receiving progress: ${percent}%`);
                 }
             } else {

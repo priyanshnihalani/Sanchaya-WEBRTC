@@ -52,6 +52,14 @@ const Send = () => {
         fileInputRef.current.click();
     };
 
+    function formatBytes(bytes) {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    }
+
     return (
         <div
             className="relative flex min-h-screen flex-col bg-white overflow-x-hidden"
@@ -138,7 +146,7 @@ const Send = () => {
                                     >
                                         <p className="font-semibold line-clamp-1">{file.name}</p>
                                         <p className="text-xs text-gray-500">
-                                            {(file.size / 1024).toFixed(2)} KB
+                                            {formatBytes(file.size)}
                                         </p>
                                         <p className="text-xs text-gray-500">{file.type}</p>
                                     </div>
