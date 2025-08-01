@@ -355,11 +355,13 @@ class WebRTCConnection {
     async handleReceiveMessage(data, writableRef = null, fileSize, setPercent, formatTime) {
         try {
             let percent = 0;
-
+            this.receiveStartTime = null
             // Reset adaptive timeout tracking
             if (this.chunkTimeout) clearTimeout(this.chunkTimeout);
 
-            const startTime = Date.now();
+            if (!this.receiveStartTime) {
+                this.receiveStartTime = Date.now();
+            }
 
             // Handle EOF: close stream and reset state
             if (data === "EOF") {
@@ -372,7 +374,7 @@ class WebRTCConnection {
                 this.recvSize = 0;
                 this.recvTotal = 0;
                 this.currentFileName = null;
-
+                this.receiveStartTime = null;
                 return;
             }
 
@@ -394,7 +396,7 @@ class WebRTCConnection {
                     percent = Math.round((this.recvSize / this.recvTotal) * 100);
                     setPercent(percent);
 
-                    const elapsedTime = (Date.now() - startTime) / 1000; // seconds
+                    const elapsedTime = (Date.now() - this.receiveStartTime) / 1000;  // seconds
                     const speed = this.recvSize / elapsedTime; // bytes/sec
                     const remainingBytes = this.recvTotal - this.recvSize;
                     const estimatedSeconds = remainingBytes / speed;

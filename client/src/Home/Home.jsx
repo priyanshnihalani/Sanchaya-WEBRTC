@@ -4,8 +4,9 @@ import Footer from "../Footer/Footer";
 import Header from "../Header/Header";
 import './Home.css'
 import { useSocket } from "../context/SocketContext";
-import { lazy, useEffect } from "react";
+import { useEffect } from "react";
 import { useUserId } from "../context/UserIdContext";
+import DisclaimerModal from "../Disclamer/Disclamer";
 
 const Home = () => {
 
@@ -27,6 +28,8 @@ const Home = () => {
       className="relative flex min-h-screen flex-col bg-white group/design-root overflow-x-hidden"
       style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}
     >
+      <DisclaimerModal />
+
       <div className="layout-container flex h-full grow flex-col">
         {/* Header Component */}
         <Header />
