@@ -237,7 +237,7 @@ class WebRTCConnection {
         let chunkIndex = 5; // Start with 128KB
 
         const maxBuffer = 16 * 1024 * 1024;
-        const safeMargin = 256 * 1024;
+        const safeMargin = 512 * 1024;
 
         let offset = 0;
         const startTime = Date.now();
@@ -265,6 +265,7 @@ class WebRTCConnection {
             const timeout = setTimeout(() => reject("Ack not received"), 10000);
             this.onAckReceived = () => {
                 clearTimeout(timeout);
+                this.onAckReceived = null;
                 resolve();
             };
         });
