@@ -233,11 +233,11 @@ class WebRTCConnection {
     async sendFile(file, setPercent, formatTime) {
         this.currentFileSize = file.size;
 
-        const chunkSizes = [16 * 1024, 32 * 1024, 64 * 1024, 128 * 1024, 256 * 1024, 512 * 1024];
-        let chunkIndex = 5; // Start with 128KB
+        const chunkSizes = [16 * 1024, 32 * 1024, 64 * 1024, 128 * 1024, 256 * 1024];
+        let chunkIndex = 4; // Start with 256KB
 
         const maxBuffer = 16 * 1024 * 1024;
-        const safeMargin = 512 * 1024;
+        const safeMargin = 256 * 1024;
 
         let offset = 0;
         const startTime = Date.now();
