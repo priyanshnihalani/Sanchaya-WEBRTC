@@ -13,6 +13,7 @@ class WebRTCConnection {
         this.setEstimatedTimes = setEstimatedTimes
         this.chunkTimeout;
         this.setHasError = setHasError
+        this.onAckReceived
 
         this.pc = new RTCPeerConnection({
             iceServers: [
@@ -85,6 +86,14 @@ class WebRTCConnection {
                 this.currentFileSize = msg.size
 
                 return this.handleAcceptName(msg); // <-- Automatically called here
+            }
+            else if (msg?.type == "ack") {
+                if (msg?.type === "ack") {
+                    if (this.onAckReceived) {
+                        this.onAckReceived();
+                    }
+                    return;
+                }
             }
             // Add more types here as needed
         } catch {
@@ -237,7 +246,7 @@ class WebRTCConnection {
 
         const waitForBuffer = () => new Promise((resolve, reject) => {
             let waited = 0;
-            const timeoutLimit = 10000; // 10s max buffer wait
+            const timeoutLimit = 10000;
             const interval = setInterval(() => {
                 if (this.dataChannel.bufferedAmount < (maxBuffer - safeMargin)) {
                     clearInterval(interval);
@@ -252,88 +261,79 @@ class WebRTCConnection {
             }, 30);
         });
 
+        const waitForAck = () => new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject("Ack not received"), 10000);
+            this.onAckReceived = () => {
+                clearTimeout(timeout);
+                resolve();
+            };
+        });
+
         while (offset < file.size) {
             try {
                 await waitForBuffer();
             } catch (err) {
                 retryAttempts++;
-                console.warn(`Send buffer stuck. Retry attempt ${retryAttempts}`);
                 if (retryAttempts >= maxRetries) {
-                    console.error("Sending failed: buffer never drained.");
-                    this.setHasError(prev => ({ ...prev, [file.name]: true }))
-
-
+                    this.setHasError(prev => ({ ...prev, [file.name]: true }));
                     return;
                 } else {
                     continue;
                 }
             }
 
-            retryAttempts = 0; // reset if buffer drained successfully
+            retryAttempts = 0;
 
             const usageRatio = this.dataChannel.bufferedAmount / maxBuffer;
-
-            if (usageRatio > 0.75 && chunkIndex > 0) {
-                chunkIndex--;
-                console.log(`🔻 Buffer high. Reducing chunk size to ${chunkSizes[chunkIndex] / 1024} KB`);
-            } else if (usageRatio < 0.25 && chunkIndex < chunkSizes.length - 1) {
-                chunkIndex++;
-                console.log(`🔺 Buffer low. Increasing chunk size to ${chunkSizes[chunkIndex] / 1024} KB`);
-            }
+            if (usageRatio > 0.75 && chunkIndex > 0) chunkIndex--;
+            else if (usageRatio < 0.25 && chunkIndex < chunkSizes.length - 1) chunkIndex++;
 
             const chunkSize = chunkSizes[chunkIndex];
             const chunk = file.slice(offset, offset + chunkSize);
             const buffer = await chunk.arrayBuffer();
 
             if (this.dataChannel.readyState !== "open") {
-                console.error("DataChannel is closed. Aborting.");
                 this.hasError = true;
-
-                this.updatePercent?.(file.name, 0);
-                this.setEstimatedTimes?.(prev => ({
-                    ...prev,
-                    [file.name]: "Connection lost",
-                }));
                 return;
             }
 
             try {
                 this.dataChannel.send(buffer);
             } catch (err) {
-                console.error("Send failed:", err);
-                if (chunkIndex > 0) {
-                    chunkIndex--;
-                    console.warn(` Dropping to ${chunkSizes[chunkIndex] / 1024} KB and retrying...`);
-                }
+                if (chunkIndex > 0) chunkIndex--;
                 continue;
+            }
+
+            // ✅ Now wait for ACK
+            try {
+                await waitForAck();
+            } catch (err) {
+                console.error("❌ Ack timeout:", err);
+                return;
             }
 
             offset += buffer.byteLength;
 
             const percent = Math.round((offset / file.size) * 100);
             setPercent(percent);
-            console.log(`Sending: ${percent}% (${chunkSize / 1024} KB)`);
 
             const elapsedTime = (Date.now() - startTime) / 1000;
             const speed = offset / elapsedTime;
             const remainingBytes = file.size - offset;
             const estimatedSeconds = remainingBytes / speed;
 
-            if (this.setEstimatedTimes) {
-                this.setEstimatedTimes(prev => ({
-                    ...prev,
-                    [file.name]: formatTime(estimatedSeconds)
-                }));
-            } else {
-                console.log("Estimated time remaining:", formatTime(estimatedSeconds));
-            }
+            this.setEstimatedTimes?.(prev => ({
+                ...prev,
+                [file.name]: formatTime(estimatedSeconds)
+            }));
         }
 
         if (this.dataChannel.readyState === "open") {
             this.dataChannel.send("EOF");
-            console.log(" File transfer complete");
+            console.log("✅ File transfer complete");
         }
     }
+
 
 
 
@@ -382,7 +382,6 @@ class WebRTCConnection {
                 await writableRef.current.write(binaryChunk);
                 console.log("Chunk size:", data.byteLength);
                 this.recvSize += data.byteLength || data.size;
-
                 // Set total file size once
                 if (!this.recvTotal && fileSize) {
                     this.recvTotal = fileSize;
@@ -424,6 +423,8 @@ class WebRTCConnection {
                         }
 
                     }, adaptiveTimeout);
+
+                    this.dataChannel.send(JSON.stringify({ type: "ack" }))
 
                     console.log(`Receiving progress: ${percent}%`);
                 }
