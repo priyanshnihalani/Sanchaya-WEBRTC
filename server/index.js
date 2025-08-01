@@ -13,6 +13,7 @@ const io = new Server(server, {
     cors: {
         origin: process.env.FRONTEND_URL,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+        credentials:true
     },
 });
 
@@ -120,7 +121,7 @@ io.on("connection", (socket) => {
     });
 });
 
-
-server.listen(process.env.PORT, () => {
+const PORT = process.env.PORT
+server.listen(process.env.PORT, '0.0.0.0', () => {
     console.log(`Server is started at ${process.env.PORT}`)
 })
