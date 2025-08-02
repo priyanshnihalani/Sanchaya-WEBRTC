@@ -49,7 +49,7 @@ const Home = () => {
                   Share files with anyone, anywhere
                 </h1>
                 <h2 className="text-white text-sm sm:text-base font-normal leading-normal">
-                  FileDrop is a simple way to send files to friends, family, and colleagues. No sign-up required.
+                  Sanchaya is a simple way to send files to friends, family, and colleagues. No sign-up required.
                 </h2>
               </div>
               <button
@@ -64,10 +64,10 @@ const Home = () => {
             <div className="flex flex-col gap-10 px-2 sm:px-4 py-10">
               <div className="flex flex-col gap-4">
                 <h1 className="text-[#111418] text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight max-w-[720px]">
-                  Why FileDrop?
+                  Why Sanchaya?
                 </h1>
                 <p className="text-[#111418] text-base font-normal leading-normal max-w-[720px]">
-                  FileDrop is the easiest way to send files of any size to anyone, anywhere. Whether you're sending a single file or a large collection, FileDrop makes it simple and secure.
+                  Sanchaya is the easiest way to send files of any size to anyone, anywhere. Whether you're sending a single file or a large collection, Sanchaya makes it simple and secure.
                 </p>
               </div>
 

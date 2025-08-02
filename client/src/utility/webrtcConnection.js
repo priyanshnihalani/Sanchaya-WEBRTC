@@ -339,7 +339,6 @@ class WebRTCConnection {
 
 
 
-
     receiveMetaData(filesArray) {
         const data = JSON.parse(filesArray)
 
@@ -356,7 +355,6 @@ class WebRTCConnection {
     async handleReceiveMessage(data, writableRef = null, fileSize, setPercent, formatTime) {
         try {
             let percent = 0;
-            this.receiveStartTime = null
             // Reset adaptive timeout tracking
             if (this.chunkTimeout) clearTimeout(this.chunkTimeout);
 
