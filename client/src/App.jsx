@@ -15,7 +15,7 @@ import SocketRegistrar from './SocketRegister'
 import FileTransfer from './FileTransfer/FileTransfer'
 import { WebRTCProvider } from './context/WebRTCContext'
 import FileReceiver from './FileReceiver/FileReceiver'
-
+import NotFoundPage from './NotFoundPage/NotFoundPage'
 function App() {
   return (
     <>
