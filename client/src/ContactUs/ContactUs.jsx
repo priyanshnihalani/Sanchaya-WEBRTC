@@ -172,44 +172,15 @@ export default ContactUs
 
 const DisclaimerModal = ({ message, onClose }) => {
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        background: "rgba(30, 41, 59, 0.75)",
-        display: "flex", justifyContent: "center", alignItems: "center",
-        zIndex: 9999
-      }}
-    >
+    <div className="fixed inset-0 z-[9999] bg-slate-800/75 flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
-        style={{
-          background: "linear-gradient(135deg,#fff 70%,#e6faff 100%)",
-          padding: "36px 32px 28px",
-          borderRadius: "18px",
-          minWidth: "340px",
-          boxShadow: "0 8px 32px 0 rgba(0,0,0,.21)",
-          textAlign: "center",
-          position: "relative",
-          fontFamily: "'Roboto', 'Segoe UI', sans-serif"
-        }}
+        className="bg-gradient-to-br from-white via-white to-[#e6faff] p-8 sm:p-10 rounded-2xl shadow-2xl min-w-[90%] sm:min-w-[400px] max-w-lg text-center relative font-sans"
       >
-        {/* Attractive check icon */}
-        <div
-          style={{
-            margin: "0 auto 12px",
-            width: 56,
-            height: 56,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "linear-gradient(135deg,#4ade80,#22d3ee)",
-            borderRadius: "50%",
-            boxShadow: "0 2px 8px rgba(34,211,238,.13)"
-          }}
-        >
+        {/* Check icon container */}
+        <div className="w-14 h-14 flex items-center justify-center mx-auto mb-3 bg-[#dce8f3] rounded-full shadow-md">
           <svg width="32" height="32" fill="none" viewBox="0 0 32 32">
             <circle cx="16" cy="16" r="16" fill="none" />
             <path
@@ -222,29 +193,16 @@ const DisclaimerModal = ({ message, onClose }) => {
           </svg>
         </div>
 
-        <h3 style={{ fontSize: "1.45rem", fontWeight: 700, color: "#089981", marginBottom: 6, marginTop: 0 }}>
-          Success!
-        </h3>
-        <p style={{ color: "#334155", fontSize: "1.05rem", margin: "0 0 20px", lineHeight: 1.5 }}>
-          {message}
-        </p>
+        {/* Title */}
+        <h3 className="text-[1.45rem] font-bold text-emerald-600 mb-1">Success!</h3>
+
+        {/* Message */}
+        <p className="text-slate-700 text-base sm:text-[1.05rem] mb-5 leading-relaxed">{message}</p>
+
+        {/* Close button */}
         <button
           onClick={onClose}
-          style={{
-            marginTop: 4,
-            padding: "10px 26px",
-            fontSize: "1.06rem",
-            borderRadius: "1.6em",
-            border: "none",
-            background: "linear-gradient(90deg,#3b82f6,#06b6d4)",
-            color: "#fff",
-            fontWeight: 600,
-            cursor: "pointer",
-            boxShadow: "0 2px 8px 0 rgba(59,130,246,.11)",
-            transition: "background .22s, transform .18s"
-          }}
-          onMouseOver={e => (e.currentTarget.style.background = "linear-gradient(90deg,#2563eb,#0ea5e9)")}
-          onMouseOut={e => (e.currentTarget.style.background = "linear-gradient(90deg,#3b82f6,#06b6d4)")}
+          className="mt-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-[#dce8f3] to-[#6a7681] text-white font-semibold shadow-md hover:from-[#6a7681] hover:to-[#dce8f3] transition-all duration-200"
         >
           Close
         </button>
