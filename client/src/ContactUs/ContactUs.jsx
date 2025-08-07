@@ -205,7 +205,7 @@ const DisclaimerModal = ({ message, onClose }) => {
         <div className="flex justify-center space-x-4">
           <button
             onClick={onClose}
-            className="px-6 py-3 text-base sm:text-lg rounded-full bg-gradient-to-r from-[#6a7681] to-[#dce8f3] text-white font-semibold shadow-md hover:from-[#4b5563] hover:to-[#cbd5e1] transition-all duration-200"
+            className="px-6 py-3 text-base sm:text-lg rounded-full bg-gradient-to-r from-[#6a7681] to-[#dce8f3] text-white font-semibold shadow hover:from-[#4b5563] hover:to-[#cbd5e1] transition-all duration-200"
           >
             Close
           </button>
