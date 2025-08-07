@@ -22,6 +22,8 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
 }))
 
+app.use(express.json())
+
 const userSocketMap = new Map();
 const connection = new Map();
 

@@ -51,7 +51,7 @@ function ContactUs() {
         e.preventDefault();
         if (!validate()) return;
 
-        try {
+        try {   
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/send-email`, {
                 method: "POST",
                 headers: {
@@ -147,7 +147,7 @@ function ContactUs() {
                             <div className="px-4 py-3">
                                 <button
                                     type="submit"
-                                    className="w-full rounded-full h-10 bg-[#dce8f3] text-[#121416] text-sm font-bold"
+                                    className="cursor-pointer w-full rounded-full h-10 bg-[#dce8f3] text-[#121416] text-sm font-bold"
                                 >
                                     Send
                                 </button>
