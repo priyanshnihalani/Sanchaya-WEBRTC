@@ -1,8 +1,10 @@
 import express from "express";
-import cors from 'cors'
-import env from 'dotenv'
+import cors from 'cors';
+import env from 'dotenv';
 import { Server } from "socket.io";
 import http from "http";
+import nodemailer from "nodemailer";
+
 
 env.config()
 
