@@ -15,7 +15,6 @@ function Header() {
                         {/* SVG Logo */}
                         <svg xmlns="http://www.w3.org/2000/svg" version="1.0"  viewBox="0 0 250.000000 306.000000" preserveAspectRatio="xMidYMid meet">
                             <metadata>
-                                Created by potrace 1.16, written by Peter Selinger 2001-2019
                                 <meta name="Producer" content="Online-Convert" /></metadata>
                             <g transform="translate(0.000000,306.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
                                 <path d="M979 2528 c-28 -7 -109 -83 -392 -366 -251 -252 -357 -364 -357 -379 0 -28 100 -139 373 -411 189 -188 218 -213 242 -210 31 3 135 103 890 857 379 378 445 447 445 472 0 18 -7 32 -19 39 -25 13 -1131 12 -1182 -2z" />

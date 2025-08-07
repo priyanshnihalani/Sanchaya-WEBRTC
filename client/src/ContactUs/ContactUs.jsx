@@ -1,9 +1,11 @@
 import { useState } from "react"
-import { motion } from "framer-motion"
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
+import { motion } from "framer-motion";
 
 function ContactUs() {
+    const [showModal, setShowModal] = useState(false);
+
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -45,20 +47,45 @@ function ContactUs() {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
 
-        console.log("Form submitted:", formData);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/send-email`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(formData),
+            });
 
-        // Reset form
-        setFormData({ name: "", email: "", message: "" });
-        setErrors({});
+            if (response.ok) {
+                console.log("Form submitted:", formData);
+                setFormData({ name: "", email: "", message: "" });
+                setErrors({});
+                setShowModal(true);
+            } else {
+                const result = await response.json();
+                alert("Failed to send message: " + result.message);
+            }
+        } catch (error) {
+            console.error("Submission error:", error);
+            alert("Something went wrong.");
+        }
     };
+
+
     return (
 
         <>
             <Header />
+            {showModal && (
+                <DisclaimerModal
+                    message="Your message was sent successfully!"
+                    onClose={() => setShowModal(false)}
+                />
+            )}
             <div className="w-full  px-10 flex justify-center items-center py-5">
                 <div className="flex flex-col-reverse md:flex-row space-x-8 gap-10 max-w-[960px] w-full justify-center items-center">
 
@@ -133,7 +160,7 @@ function ContactUs() {
                         </p>
                     </div>
 
-                   
+
                 </div>
             </div>
             <Footer />
@@ -142,3 +169,27 @@ function ContactUs() {
 }
 
 export default ContactUs
+
+const DisclaimerModal = ({ message, onClose }) => {
+    return (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', display: 'flex',
+            justifyContent: 'center', alignItems: 'center'
+        }}>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+
+                style={{
+                    background: '#fff', padding: '20px', borderRadius: '8px',
+                    minWidth: '300px', textAlign: 'center'
+                }}>
+                <h3>Success</h3>
+                <p>{message}</p>
+                <button onClick={onClose}>Close</button>
+            </motion.div>
+        </div>
+    );
+};

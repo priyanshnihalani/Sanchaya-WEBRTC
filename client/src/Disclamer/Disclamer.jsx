@@ -20,7 +20,7 @@ export default function DisclaimerModal() {
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-xl rounded-2xl bg-white p-6 shadow-xl border border-yellow-300">
+        <Dialog.Panel className="mx-auto max-w-xl rounded-2xl bg-white p-6 shadow-xl border ">
           <div className="flex items-center gap-3 mb-4">
             <AlertTriangle className="text-yellow-500" />
             <Dialog.Title className="text-lg font-bold text-gray-900">
@@ -69,3 +69,5 @@ export default function DisclaimerModal() {
     </Dialog>
   );
 }
+
+
