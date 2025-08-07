@@ -172,21 +172,21 @@ export default ContactUs
 
 const DisclaimerModal = ({ message, onClose }) => {
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-800/75 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[9999] bg-slate-900/70 flex items-center justify-center px-4 sm:px-6">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
-        className="bg-gradient-to-br from-white via-white to-[#e6faff] p-8 sm:p-10 rounded-2xl shadow-2xl min-w-[90%] sm:min-w-[400px] max-w-lg text-center relative font-sans"
+        className="w-full max-w-3xl bg-gradient-to-br from-white via-white to-[#e6faff] rounded-3xl shadow-2xl p-6 sm:p-10 text-center font-sans relative"
       >
-        {/* Check icon container */}
-        <div className="w-14 h-14 flex items-center justify-center mx-auto mb-3 bg-[#dce8f3] rounded-full shadow-md">
-          <svg width="32" height="32" fill="none" viewBox="0 0 32 32">
+        {/* Success icon container */}
+        <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto mb-5 bg-[#dce8f3] rounded-full shadow-lg">
+          <svg width="36" height="36" fill="none" viewBox="0 0 32 32">
             <circle cx="16" cy="16" r="16" fill="none" />
             <path
               d="M10.5 16.5L15 21L22 14"
-              stroke="#fff"
-              strokeWidth="2.5"
+              stroke="#10b981"
+              strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -194,18 +194,22 @@ const DisclaimerModal = ({ message, onClose }) => {
         </div>
 
         {/* Title */}
-        <h3 className="text-[1.45rem] font-bold text-emerald-600 mb-1">Success!</h3>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-emerald-600 mb-2">Success!</h2>
 
         {/* Message */}
-        <p className="text-slate-700 text-base sm:text-[1.05rem] mb-5 leading-relaxed">{message}</p>
+        <p className="text-slate-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto mb-6">
+          {message}
+        </p>
 
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="mt-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-[#dce8f3] to-[#6a7681] text-white font-semibold shadow-md hover:from-[#6a7681] hover:to-[#dce8f3] transition-all duration-200"
-        >
-          Close
-        </button>
+        {/* Buttons */}
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={onClose}
+            className="px-6 py-3 text-base sm:text-lg rounded-full bg-gradient-to-r from-[#6a7681] to-[#dce8f3] text-white font-semibold shadow-md hover:from-[#4b5563] hover:to-[#cbd5e1] transition-all duration-200"
+          >
+            Close
+          </button>
+        </div>
       </motion.div>
     </div>
   );
