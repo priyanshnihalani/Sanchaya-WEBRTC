@@ -28,42 +28,49 @@ const FileReceiver = () => {
   }
 
   async function handleAcceptFile(file) {
-    const fileData = JSON.stringify({ type: "file-name", name: file.name, size: file.size });
 
-    // Close previous stream if active
-    if (writableRef.current) {
-      try {
-        await writableRef.current.close();
-        await new Promise((r) => setTimeout(r, 100));
-        console.log("Previous stream closed.");
-      } catch (err) {
-        console.warn("Writable already closed:", err.message);
-      }
-    }
-
-    writableRef.current = null;
-    currentFileRef.current = null;
+    let dirHandle, fileHandle, writable;
 
     try {
-      const dirHandle = await window.showDirectoryPicker();
-      const fileHandle = await dirHandle.getFileHandle(file.name, { create: true });
-      const writable = await fileHandle.createWritable({ keepExistingData: false });
+      dirHandle = await window.showDirectoryPicker();
+
+      // Now all these are allowed (picker already OK'd)
+      fileHandle = await dirHandle.getFileHandle(file.name, { create: true });
+      writable = await fileHandle.createWritable({ keepExistingData: false });
+
+      // Close previous stream only after new one is created
+      if (writableRef.current) {
+        try {
+          await writableRef.current.close();
+          console.log("Previous stream closed.");
+        } catch (err) {
+          console.warn("Writable already closed:", err.message);
+        }
+      }
 
       writableRef.current = writable;
       currentFileRef.current = file.name;
 
-      // Let sender know we're ready to receive this file
+      // NOW tell sender you're ready
+      const fileData = JSON.stringify({
+        type: "file-name",
+        name: file.name,
+        size: file.size,
+      });
+
       instance.acceptFileName(fileData);
-      console.log(" Accept message sent for file:", file.name);
+      console.log("Accept message sent for file:", file.name);
+
     } catch (err) {
       console.error("Error during writable setup:", err);
     }
   }
 
+
   function handleReject(name) {
-  const newMetaData = metaData.filter((item) => item.name !== name);
-  setMetaData(newMetaData);
-}
+    const newMetaData = metaData.filter((item) => item.name !== name);
+    setMetaData(newMetaData);
+  }
 
   return (
     <div className="relative flex min-h-screen flex-col bg-white overflow-x-hidden">

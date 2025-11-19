@@ -7,7 +7,7 @@ import QrScanner from "qr-scanner";
 import { useSocket } from "../context/SocketContext";
 import { useUserId } from "../context/UserIdContext";
 import { NotificationToReceiver } from "../Components/Notification";
-import { motion, AnimatePresence, m } from "framer-motion";
+import { motion, AnimatePresence} from "framer-motion";
 import CryptoJS from "crypto-js";
 import { useWebRTC } from "../context/WebRTCContext";
 import { useNavigate } from "react-router-dom";
