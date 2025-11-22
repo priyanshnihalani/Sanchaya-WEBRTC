@@ -2,7 +2,7 @@ import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useWebRTC } from "../context/WebRTCContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const FileTransfer = () => {
   const location = useLocation();
