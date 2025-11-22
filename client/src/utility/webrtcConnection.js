@@ -239,10 +239,6 @@ class WebRTCConnection {
         }
     }
 
-
-
-
-
     async sendFile(file, setPercent, formatTime) {
         this.currentFileSize = file.size;
 
@@ -348,9 +344,6 @@ class WebRTCConnection {
         }
     }
 
-
-
-
     receiveMetaData(filesArray) {
         const data = JSON.parse(filesArray)
 
@@ -362,7 +355,6 @@ class WebRTCConnection {
             return null;
         }
     }
-
 
     async handleReceiveMessage(data, writableRef = null, fileSize, setPercent, formatTime) {
         try {
@@ -449,7 +441,6 @@ class WebRTCConnection {
             console.error("Error handling received message:", error);
         }
     }
-
 
     closeConnection() {
         if (this.dataChannel) {

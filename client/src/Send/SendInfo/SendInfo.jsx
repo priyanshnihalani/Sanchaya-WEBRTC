@@ -25,7 +25,7 @@ function SendInfo() {
     const navigate = useNavigate();
 
     if (!fromSend) {
-        return <Navigate to={"/send"} />;
+        return <Navigate to={"/send"} replace />;
     }
 
     useEffect(() => {

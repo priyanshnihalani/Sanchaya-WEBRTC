@@ -11,7 +11,7 @@ const FileTransfer = () => {
 
   useEffect(() => {
     if (!metaData) {
-      navigate('/sendinfo')    
+      navigate('/sendinfo', {replace: true})    
     }
   }, [])
 

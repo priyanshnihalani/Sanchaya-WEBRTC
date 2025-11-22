@@ -1,6 +1,6 @@
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import { useLocation, useNavigate } from "react-router-dom";
+import { replace, useLocation, useNavigate } from "react-router-dom";
 import { useWebRTC } from "../context/WebRTCContext";
 import { useEffect, useState } from "react";
 
@@ -11,20 +11,25 @@ const FileReceiver = () => {
   const [fileStatus, setFileStatus] = useState({})
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (!metaData || metaData.length === 0) {
-      navigate('/receive');
-    }
-  }, [])
-
   const {
     instance,
     writableRef,
     currentFileRef,
     percentMap,
     estimatedTimes,
-    hasError
+    hasError,
+    resetTransfer
   } = useWebRTC();
+
+  useEffect(() => {
+    if (!metaData || metaData.length === 0) {
+      navigate('/receive', { replace: true });
+    }
+    return () => {
+      resetTransfer()
+      setMetaData([])
+    }
+  }, [])
 
   function formatBytes(bytes) {
     if (bytes === 0) return "0 Bytes";

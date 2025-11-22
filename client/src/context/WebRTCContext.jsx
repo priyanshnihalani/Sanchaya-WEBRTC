@@ -21,18 +21,20 @@ export function WebRTCProvider({ children }) {
 
     function createConnection(files) {
         const connection = new WebRTCConnection(socket, files, setCompleted, setChunkData, writableRef, updatePercent, setEstimatedTimes, setHasError);
-
-        console.log("WebRTC connection created:", connection);
-
         setInstance(connection)
         return connection
     }
 
-
-
+    function resetTransfer () {
+        writableRef.current = null;
+        currentFileRef.current = null;
+        setPercentMap({});
+        setEstimatedTimes({});
+        setHasError({});
+    };
 
     return (
-        <WebRTCContext.Provider value={{ instance, createConnection, completed, writableRef, percentMap, updatePercent, chunkData, currentFileRef, estimatedTimes, hasError}}>
+        <WebRTCContext.Provider value={{ instance, createConnection, completed, writableRef, percentMap, updatePercent, chunkData, currentFileRef, estimatedTimes, hasError, resetTransfer }}>
             {children}
         </WebRTCContext.Provider>
     )
