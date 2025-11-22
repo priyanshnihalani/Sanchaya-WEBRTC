@@ -10,6 +10,7 @@ const FileReceiver = () => {
   const [metaData, setMetaData] = useState(location?.state?.metaData || []);
   const [fileStatus, setFileStatus] = useState({})
   const navigate = useNavigate()
+  const [activeFile, setActiveFile] = useState(null);
 
   const {
     instance,
@@ -25,11 +26,28 @@ const FileReceiver = () => {
     if (!metaData || metaData.length === 0) {
       navigate('/receive', { replace: true });
     }
+  }, [navigate, metaData])
+
+  useEffect(() => {
     return () => {
-      resetTransfer()
-      setMetaData([])
+      resetTransfer();
+      setMetaData([]);
+    };
+  }, [resetTransfer]);
+
+  useEffect(() => {
+    if (!activeFile) return;
+
+    if (percentMap[activeFile] === 100) {
+      setFileStatus(prev => ({
+        ...prev,
+        [activeFile]: "received"
+      }));
+
+      setActiveFile(null);
     }
-  }, [])
+  }, [percentMap, activeFile]);
+
 
   function formatBytes(bytes) {
     if (bytes === 0) return "0 Bytes";
@@ -41,50 +59,45 @@ const FileReceiver = () => {
 
   async function handleAcceptFile(file) {
 
-    let dirHandle, fileHandle, writable;
+    setActiveFile(file.name);
+
     setFileStatus(prev => ({
       ...prev,
-      [file.name]: "preparing"
+      [file.name]: "receiving"
     }));
+
+    let dirHandle, fileHandle, writable;
+
     try {
       dirHandle = await window.showDirectoryPicker();
-
-      // Now all these are allowed (picker already OK'd)
       fileHandle = await dirHandle.getFileHandle(file.name, { create: true });
       writable = await fileHandle.createWritable({ keepExistingData: false });
 
-      // Close previous stream only after new one is created
       if (writableRef.current) {
-        try {
-          await writableRef.current.close();
-          console.log("Previous stream closed.");
-        } catch (err) {
-          console.warn("Writable already closed:", err.message);
-        }
+        try { await writableRef.current.close(); } catch { }
       }
 
       writableRef.current = writable;
       currentFileRef.current = file.name;
 
-      // NOW tell sender you're ready
-      const fileData = JSON.stringify({
+      instance.acceptFileName(JSON.stringify({
         type: "file-name",
         name: file.name,
         size: file.size,
-      });
-
-      instance.acceptFileName(fileData);
-      console.log("Accept message sent for file:", file.name);
+      }));
 
     } catch (err) {
-      console.error("Error during writable setup:", err);
+      console.error(err);
     }
   }
 
-
   function handleReject(name) {
-    const newMetaData = metaData.filter((item) => item.name !== name);
+    const newMetaData = metaData.filter(item => item.name !== name);
     setMetaData(newMetaData);
+
+    if (activeFile === name) {
+      setActiveFile(null);
+    }
   }
 
   return (
@@ -114,11 +127,29 @@ const FileReceiver = () => {
                     {`${formatBytes(item.size)} | Estimated time remaining: ${estimatedTimes[item.name] || 0}`}
                   </p>
                   <div className="space-x-4 mt-2">
-                    <button className="underline cursor-pointer" onClick={() => handleAcceptFile(item)} disabled={fileStatus[item.name]}>
+                    <button
+                      className="underline cursor-pointer"
+                      onClick={() => handleAcceptFile(item)}
+                      disabled={
+                        fileStatus[item.name] === "receiving" ||
+                        fileStatus[item.name] === "received" ||
+                        (activeFile && activeFile !== item.name)
+                      }
+                    >
                       Accept
                     </button>
-                    <button className="underline cursor-pointer" onClick={() => handleReject(item.name)} disabled={fileStatus[item.name]}>
-                      Reject</button>
+
+                    <button
+                      className="underline cursor-pointer"
+                      onClick={() => handleReject(item.name)}
+                      disabled={
+                        fileStatus[item.name] === "receiving" ||
+                        fileStatus[item.name] === "received" ||
+                        (activeFile && activeFile !== item.name)
+                      }
+                    >
+                      Reject
+                    </button>
                   </div>
                 </div>
 

@@ -8,16 +8,7 @@ const FileTransfer = () => {
   const location = useLocation();
   const [metaData, setMetaData] = useState(location?.state?.metaData || []);
   const navigate = useNavigate()
-
-  useEffect(() => {
-    if (!metaData || metaData?.length === 0 ) {
-      navigate('/sendinfo', { replace: true })
-    }
-    return () => {
-      resetTransfer()
-      setMetaData([])
-    }
-  }, [])
+  const [activeFile, setActiveFile] = useState(null);
 
   const {
     percentMap,
@@ -25,6 +16,39 @@ const FileTransfer = () => {
     hasError,
     resetTransfer
   } = useWebRTC();
+
+  useEffect(() => {
+    if (!metaData || metaData?.length === 0) {
+      navigate('/sendinfo', { replace: true })
+    }
+  }, [metaData, navigate])
+
+  useEffect(() => {
+    return () => {
+      resetTransfer();
+      setMetaData([]);
+    };
+  }, [resetTransfer]);
+
+  useEffect(() => {
+    if (!activeFile && metaData.length > 0) {
+      const nextFile = metaData.find(
+        file => (percentMap[file.name] || 0) === 0
+      );
+
+      if (nextFile) {
+        setActiveFile(nextFile.name);
+      }
+    }
+  }, [metaData, percentMap, activeFile]);
+
+  useEffect(() => {
+    if (!activeFile) return;
+
+    if (percentMap[activeFile] === 100) {
+      setActiveFile(null);
+    }
+  }, [percentMap, activeFile]);
 
   function formatBytes(bytes) {
     if (bytes === 0) return "0 Bytes";
