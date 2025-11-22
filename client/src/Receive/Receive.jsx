@@ -419,75 +419,7 @@ const Receive = () => {
         } else {
             alert('Please enter a valid User code');
         }
-    };
-
-
-    async function handleAccept(fileName) {
-        try {
-
-            if (writableRef.current) {
-                try {
-                    await writableRef.current.close();
-                    await new Promise(r => setTimeout(r, 100));
-                    console.log("✅ Previous stream closed.");
-                } catch (err) {
-                    console.warn("Writable already closed:", err.message);
-                }
-            }
-            writableRef.current = null;
-            currentFileRef.current = null;
-
-            const dirHandle = await window.showDirectoryPicker();
-            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
-            const writable = await fileHandle.createWritable();
-
-            writableRef.current = writable;
-            currentFileRef.current = fileName;
-
-            // Step 1: Notify sender
-            socket.emit('accepted-file', {
-                receiverId: userId.userName,
-                senderId: code,
-                fileName
-            });
-
-            // Step 2: Give memory time to set
-            await new Promise(resolve => setTimeout(resolve, 300));
-
-            // Step 3: Tell sender to begin
-            socket.emit('receiver-ready', {
-                receiverId: userId.userName,
-                senderId: code,
-                fileName
-            });
-
-
-            setRecvProgressList(prev => {
-                if (prev.some(f => f.fileName === fileName)) return prev;
-                return [
-                    ...prev,
-                    {
-                        fileName,
-                        percent: 0,
-                        status: "in-progress"
-                    }
-                ];
-            });
-
-            console.log("writableRef set for:", fileName);
-        } catch (err) {
-            console.error("Failed to prepare for receive:", err);
-        }
     }
-
-
-    function handleReject(name) {
-        const removedRejectedFiles = fileNames.filter(item => item !== name);
-
-        setFileNames(removedRejectedFiles)
-    }
-
-
 
     return (
         <div
@@ -497,7 +429,7 @@ const Receive = () => {
             <Header />
 
             <div className="flex justify-center px-4 md:px-40 py-5 flex-1">
-                <div className="w-full max-w-[512px] py-5 flex flex-col space-y-10">
+                <div className="w-full max-w-lg py-5 flex flex-col space-y-10">
                     <div className="flex justify-between gap-3 p-4">
                         <p className="text-[#111418] text-[32px] font-bold">
                             Enter ID or Scan QR

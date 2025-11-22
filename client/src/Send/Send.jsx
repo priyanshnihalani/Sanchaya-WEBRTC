@@ -17,9 +17,7 @@ const Send = () => {
             type: file.type,
             size: file.size,
         }));
-
         setDroppedFiles([...droppedFiles, ...files]);
-        console.log("Selected files:", files);
     };
 
     const handleDrop = (e) => {
@@ -33,9 +31,7 @@ const Send = () => {
             type: file.type,
             size: file.size,
         }));
-
         setDroppedFiles([...droppedFiles, ...dropped]);
-        console.log("Dropped files:", dropped);
     };
 
     const handleDragOver = (e) => {
@@ -100,7 +96,7 @@ const Send = () => {
                                     Drag and drop files here
                                 </p>
                                 <p className="text-[#111418] text-sm font-normal text-center">
-                                    Or click below to select files
+                                    Or click below to select files or upload zip if you want to send directory
                                 </p>
                             </div>
 
@@ -118,7 +114,7 @@ const Send = () => {
                                 onClick={handleButtonClick}
                                 className="cursor-pointer flex min-w-[84px] max-w-[480px] items-center justify-center rounded-xl h-10 px-4 bg-[#f0f2f5] text-[#111418] text-sm font-bold"
                             >
-                                Select Files
+                                Select Files or Zip
                             </button>
                             {droppedFiles.length > 0 && (
                                 <div className="flex px-4 justify-center">

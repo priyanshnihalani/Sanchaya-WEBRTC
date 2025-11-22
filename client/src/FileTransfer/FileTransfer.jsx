@@ -1,11 +1,19 @@
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useWebRTC } from "../context/WebRTCContext";
+import { useEffect } from "react";
 
 const FileTransfer = () => {
   const location = useLocation();
   const metaData = location?.state?.metaData
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!metaData) {
+      navigate('/sendinfo')    
+    }
+  }, [])
 
   const {
     percentMap,
@@ -42,7 +50,7 @@ const FileTransfer = () => {
 
             <h3 className="text-base sm:text-lg font-bold px-2 sm:px-4 pt-4 pb-2">Files in Progress</h3>
 
-            {metaData.map((item, index) => (
+            {metaData?.map((item, index) => (
               <div
                 key={index}
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 bg-white px-4 py-2 min-h-[72px]"

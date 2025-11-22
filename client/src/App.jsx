@@ -38,7 +38,6 @@ function App() {
                   <Route path='/file-transfer' element={<FileTransfer />} />
                   <Route path='/file-receiver' element={<FileReceiver />} />
                   <Route path="*" element={<NotFoundPage />} />
-
                 </Routes>
               </Router>
             </UserIdProvider>

@@ -1,14 +1,21 @@
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useWebRTC } from "../context/WebRTCContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 
 const FileReceiver = () => {
   const location = useLocation();
   const [metaData, setMetaData] = useState(location?.state?.metaData || []);
+  const [fileStatus, setFileStatus] = useState({})
+  const navigate = useNavigate()
 
+  useEffect(() => {
+    if (!metaData || metaData.length === 0) {
+      navigate('/receive');
+    }
+  }, [])
 
   const {
     instance,
@@ -30,7 +37,10 @@ const FileReceiver = () => {
   async function handleAcceptFile(file) {
 
     let dirHandle, fileHandle, writable;
-
+    setFileStatus(prev => ({
+      ...prev,
+      [file.name]: "preparing"
+    }));
     try {
       dirHandle = await window.showDirectoryPicker();
 
@@ -99,10 +109,11 @@ const FileReceiver = () => {
                     {`${formatBytes(item.size)} | Estimated time remaining: ${estimatedTimes[item.name] || 0}`}
                   </p>
                   <div className="space-x-4 mt-2">
-                    <button className="underline cursor-pointer" onClick={() => handleAcceptFile(item)}>
-                      accept
+                    <button className="underline cursor-pointer" onClick={() => handleAcceptFile(item)} disabled={fileStatus[item.name]}>
+                      Accept
                     </button>
-                    <button className="underline cursor-pointer" onClick={() => handleReject(item.name)}>Reject</button>
+                    <button className="underline cursor-pointer" onClick={() => handleReject(item.name)} disabled={fileStatus[item.name]}>
+                      Reject</button>
                   </div>
                 </div>
 
