@@ -6,19 +6,24 @@ import { useEffect } from "react";
 
 const FileTransfer = () => {
   const location = useLocation();
-  const metaData = location?.state?.metaData
+  const [metaData, setMetaData] = useState(location?.state?.metaData || []);
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!metaData) {
-      navigate('/sendinfo', {replace: true})    
+    if (!metaData || metaData?.length === 0 ) {
+      navigate('/sendinfo', { replace: true })
+    }
+    return () => {
+      resetTransfer()
+      setMetaData([])
     }
   }, [])
 
   const {
     percentMap,
     estimatedTimes,
-    hasError
+    hasError,
+    resetTransfer
   } = useWebRTC();
 
   function formatBytes(bytes) {
