@@ -14,21 +14,17 @@ const FileTransfer = () => {
     percentMap,
     estimatedTimes,
     hasError,
-    resetTransfer
   } = useWebRTC();
 
   useEffect(() => {
     if (!metaData || metaData?.length === 0) {
       navigate('/sendinfo', { replace: true })
     }
+    else{
+      navigate(location.pathname, {replace: true, state: {}})
+    }
   }, [metaData, navigate])
 
-  useEffect(() => {
-    return () => {
-      resetTransfer();
-      setMetaData([]);
-    };
-  }, [resetTransfer]);
 
   useEffect(() => {
     if (!activeFile && metaData.length > 0) {

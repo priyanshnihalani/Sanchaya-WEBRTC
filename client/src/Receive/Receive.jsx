@@ -394,9 +394,6 @@ const Receive = () => {
         };
     }, [socket, instance, handleOffer]);
 
-
-
-
     useEffect(() => {
         const handleCandidate = ({ candidate }) => {
             instance?.addIceCandidate(candidate);
@@ -412,10 +409,7 @@ const Receive = () => {
 
     const handleConnect = () => {
         if (code.length > 0) {
-            alert(`Connecting with code name: ${code}`);
-
             socket.emit("connect-sender-receiver", { receiverId: userId.userName, senderId: code });
-
         } else {
             alert('Please enter a valid User code');
         }

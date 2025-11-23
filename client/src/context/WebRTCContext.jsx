@@ -25,16 +25,8 @@ export function WebRTCProvider({ children }) {
         return connection
     }
 
-    function resetTransfer () {
-        writableRef.current = null;
-        currentFileRef.current = null;
-        setPercentMap({});
-        setEstimatedTimes({});
-        setHasError({});
-    };
-
     return (
-        <WebRTCContext.Provider value={{ instance, createConnection, completed, writableRef, percentMap, updatePercent, chunkData, currentFileRef, estimatedTimes, hasError, resetTransfer }}>
+        <WebRTCContext.Provider value={{ instance, createConnection, completed, writableRef, percentMap, updatePercent, chunkData, currentFileRef, estimatedTimes, hasError}}>
             {children}
         </WebRTCContext.Provider>
     )

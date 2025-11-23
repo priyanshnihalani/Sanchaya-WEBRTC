@@ -19,21 +19,17 @@ const FileReceiver = () => {
     percentMap,
     estimatedTimes,
     hasError,
-    resetTransfer
   } = useWebRTC();
 
   useEffect(() => {
     if (!metaData || metaData.length === 0) {
       navigate('/receive', { replace: true });
     }
+    else {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
   }, [navigate, metaData])
 
-  useEffect(() => {
-    return () => {
-      resetTransfer();
-      setMetaData([]);
-    };
-  }, [resetTransfer]);
 
   useEffect(() => {
     if (!activeFile) return;
