@@ -3,7 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useFile } from "../context/FileContext";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-
+import { motion } from "framer-motion";
+import {
+    UploadCloud,
+    FolderArchive,
+    FileText,
+    CheckCircle2
+} from "lucide-react";
 const Send = () => {
     const { droppedFiles, setDroppedFiles } = useFile();
     const [isDragActive, setIsDragActive] = useState(false);
@@ -58,102 +64,124 @@ const Send = () => {
 
     return (
         <div
-            className="relative flex min-h-screen flex-col bg-white overflow-x-hidden"
+            className="min-h-screen bg-[#f5f6f8] flex flex-col"
             style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}
         >
-            {/* Header */}
             <Header />
 
-            {/* Main Content */}
-            <div className="px-6 md:px-40 flex flex-1 justify-center py-5">
-                <div className="flex flex-col max-w-[960px] flex-1">
-                    <h2 className="text-[#111418] text-[28px] font-bold text-center pb-3 pt-5">
-                        Send files
-                    </h2>
-                    <p className="text-[#111418] text-base font-normal text-center pb-3">
-                        Select files to send. A code will be generated for the recipient to use.
-                    </p>
+            <div className="flex justify-center items-center flex-1 px-4 py-6">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4 }}
+                    className="w-full max-w-md rounded-2xl shadow p-6 space-y-6 bg-white"
+                >
+
+                    {/* Title */}
+                    <div className="text-center">
+                        <h2 className="text-2xl font-bold text-[#111418] flex items-center justify-center gap-2">
+                            <UploadCloud className="w-6 h-6 text-[#2f80ed]" />
+                            Send files
+                        </h2>
+                        <p className="text-sm text-[#8a96a3] mt-1">
+                            Select files to send. A code will be generated for the recipient.
+                        </p>
+                    </div>
 
                     {/* Drop Area */}
-                    <div className="flex flex-col px-4 py-0 ">
-                        <div
-                            onDrop={handleDrop}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            className={`flex flex-col items-center gap-6 rounded-xl px-6 py-14 transition-all duration-200 ${isDragActive ? "bg-blue-50" : ""
-                                }`}
+                    <motion.div
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        animate={{ scale: isDragActive ? 1.03 : 1 }}
+                        className={`flex flex-col items-center gap-5 rounded-xl border-2 border-dashed px-6 py-10 transition ${isDragActive
+                                ? "bg-blue-50 border-blue-400"
+                                : "bg-[#f0f2f5] border-[#dbe0e6]"
+                            }`}
+                    >
+
+                        {/* Floating Upload Icon */}
+                        <motion.div
+                            animate={{ y: [0, -10, 0] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="flex items-center justify-center w-24 h-24 rounded-full bg-white shadow"
                         >
-                            <div
-                                className="bg-center bg-no-repeat aspect-video bg-cover rounded-xl w-full max-w-[360px]"
-                                style={{
-                                    backgroundImage:
-                                        "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBsMr95vsXhxrMzy1o16-k569pgJmc0F8cGgR6JtSXFajOcZIVAqfa0CdNWoIfUqEg6uldo4DTbsk8BPe7jS97ZDyVy3G1l-pD8lzoevZrg1ebCb3C4wjKX4R0xZQmXZgeltZyt51j7GZPIKqPshPw3NPrjvzFb9VulajdYo9i9E0HwbIhlyDZLY4oYPBhn_BRg7av8ZLB5nYQEGn8JOWzoq1RzKXuXvlbdWeMAK4Nis-Kf7O7rEpvYrBeZ9G10wP-n5E6uQbVJ-3M')",
-                                }}
-                            ></div>
+                            <UploadCloud className="w-10 h-10 text-[#2f80ed]" />
+                        </motion.div>
 
-                            <div className="flex max-w-[480px] flex-col items-center gap-2">
-                                <p className="text-[#111418] text-lg font-bold text-center">
-                                    Drag and drop files here
-                                </p>
-                                <p className="text-[#111418] text-sm font-normal text-center">
-                                    Or click below to select files or upload zip if you want to send directory
-                                </p>
-                            </div>
-
-                            {/* Hidden File Input */}
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                className="hidden"
-                                multiple
-                                onChange={handleFileInputChange}
-                            />
-
-                            {/* Select Files Button */}
-                            <button
-                                onClick={handleButtonClick}
-                                className="cursor-pointer flex min-w-[84px] max-w-[480px] items-center justify-center rounded-xl h-10 px-4 bg-[#f0f2f5] text-[#111418] text-sm font-bold"
-                            >
-                                Select Files or Zip
-                            </button>
-                            {droppedFiles.length > 0 && (
-                                <div className="flex px-4 justify-center">
-                                    <button
-                                        onClick={() =>
-                                            navigate("/sendinfo", { state: { fromSend: true } })
-                                        }
-                                        className="cursor-pointer flex min-w-[84px] max-w-[480px] items-center justify-center rounded-xl h-10 px-4 bg-[#3d98f4] text-white text-sm font-bold"
-                                    >
-                                        Generate Code
-                                    </button>
-                                </div>
-                            )}
+                        <div className="text-center space-y-1">
+                            <p className="text-[#111418] font-semibold flex items-center justify-center gap-2">
+                                Drag and drop files here
+                            </p>
+                            <p className="text-sm text-[#60758a] flex items-center justify-center gap-2">
+                                <FolderArchive className="w-4 h-4" />
+                                Or select files / zip folder
+                            </p>
                         </div>
-                    </div>
-                    {/* Selected Files Listing */}
+
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            multiple
+                            className="hidden"
+                            onChange={handleFileInputChange}
+                        />
+
+                        <button
+                            onClick={handleButtonClick}
+                            className="h-10 px-6 rounded-lg bg-white border border-[#dbe0e6] font-semibold text-sm hover:border-blue-400 transition flex items-center gap-2"
+                        >
+                            <FileText className="w-4 h-4" />
+                            Select Files or Zip
+                        </button>
+
+                        {droppedFiles.length > 0 && (
+                            <button
+                                onClick={() => navigate("/sendinfo", { state: { fromSend: true } })}
+                                className="h-10 px-6 rounded-lg bg-[#2f80ed] text-white font-semibold hover:bg-[#256bc3] transition flex items-center gap-2"
+                            >
+                                <CheckCircle2 className="w-4 h-4" />
+                                Generate Code
+                            </button>
+                        )}
+                    </motion.div>
+
+                    {/* Selected Files */}
                     {droppedFiles.length > 0 && (
-                        <div className="mt-4 px-4">
-                            <h3 className="text-md font-bold mb-2">Selected Files:</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                        >
+                            <h3 className="text-sm font-bold text-[#111418] mb-3 flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-[#2f80ed]" />
+                                Selected Files
+                            </h3>
+
+                            <div className="grid grid-cols-1 gap-3">
                                 {droppedFiles.map((file, idx) => (
-                                    <div
+                                    <motion.div
                                         key={idx}
-                                        className="border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all"
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        className="flex justify-between items-center border rounded-lg p-3 bg-[#fafafa]"
                                     >
-                                        <p className="font-semibold line-clamp-1">{file.name}</p>
-                                        <p className="text-xs text-gray-500">
-                                            {formatBytes(file.size)}
-                                        </p>
-                                        <p className="text-xs text-gray-500">{file.type}</p>
-                                    </div>
+                                        <div>
+                                            <p className="font-semibold text-sm truncate max-w-[180px] flex items-center gap-2">
+                                                <FileText className="w-4 h-4 text-gray-600" />
+                                                {file.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {formatBytes(file.size)} • {file.type || "Unknown"}
+                                            </p>
+                                        </div>
+                                    </motion.div>
                                 ))}
                             </div>
-                        </div>
+                        </motion.div>
                     )}
-                </div>
+                </motion.div>
             </div>
 
-            {/* Footer */}
             <Footer />
         </div>
     );

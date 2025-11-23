@@ -6,11 +6,12 @@ import Footer from "../Footer/Footer";
 import QrScanner from "qr-scanner";
 import { useSocket } from "../context/SocketContext";
 import { useUserId } from "../context/UserIdContext";
-import { NotificationToReceiver } from "../Components/Notification";
-import { motion, AnimatePresence} from "framer-motion";
+import { ConnectionNotificationToSender, ErrorNotificationToReceiver, NotificationToReceiver } from "../Components/Notification";
+import { motion, AnimatePresence } from "framer-motion";
 import CryptoJS from "crypto-js";
 import { useWebRTC } from "../context/WebRTCContext";
 import { useNavigate } from "react-router-dom";
+import { KeyRound, QrCode, Camera, Link2 } from "lucide-react";
 
 
 const Receive = () => {
@@ -40,10 +41,8 @@ const Receive = () => {
     const { instance, createConnection, completed } = useWebRTC();
     const [metaData, setMetaData] = useState(null)
     const navigate = useNavigate()
-
-    useEffect(() => {
-        console.log(socket)
-    }, [])
+    const [errorNotify, setErrorNotify] = useState(false)
+    const [connectNotify, setConnectNotify] = useState(false)
 
     // Start camera for QR scanning
     const startCamera = async () => {
@@ -410,120 +409,150 @@ const Receive = () => {
     const handleConnect = () => {
         if (code.length > 0) {
             socket.emit("connect-sender-receiver", { receiverId: userId.userName, senderId: code });
+            setConnectNotify(true)
+            setTimeout(() => {
+                setConnectNotify(false)
+            }, 5000)
         } else {
-            alert('Please enter a valid User code');
+            setErrorNotify(true)
+            setTimeout(() => {
+                setErrorNotify(false)
+            }, 5000)
         }
     }
 
     return (
         <div
-            className="relative flex min-h-screen flex-col bg-white overflow-x-hidden"
+            className="min-h-screen bg-[#f5f6f8] flex flex-col space-y-4"
             style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}
         >
             <Header />
 
-            <div className="flex justify-center px-4 md:px-40 py-5 flex-1">
-                <div className="w-full max-w-lg py-5 flex flex-col space-y-10">
-                    <div className="flex justify-between gap-3 p-4">
-                        <p className="text-[#111418] text-[32px] font-bold">
-                            Enter ID or Scan QR
+            <div className="flex justify-center items-center flex-1 px-4">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="w-full max-w-md rounded-2xl shadow p-6 space-y-6 bg-white"
+                >
+
+                    {/* Image Section */}
+                    <motion.div
+                        animate={{ y: [0, -6, 0] }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                        className="bg-[#e9edf2] rounded-xl flex justify-center p-6"
+                    >
+                        <div
+                            className="w-64 h-64 bg-center bg-no-repeat bg-contain"
+                            style={{
+                                backgroundImage:
+                                    "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCwvdfrVNmNF5nvaRC6WROdNExyRtX_Tk6P0jnxjQ1CExHgpvhzoTS-G25l9RpRG2JwMtZ1nsnJDRwnb3loV3AdEFW2r2_qa5MtHrhlBJ8GlAJIZr-8zLUWaxV-tgj8PxHhStMIltqcUpGhJ2W0VoXMknKRJyUDJYBmQBNHdEa3CaHWySGckaQ_sPLQB9imoTLDHgHLtc-29s-fjJTaxV7-6SRFDbf_orRCTWJ9m2xDqJenUy8IkVLO7M-G0lJS46sOBQduxoQPXFA1')",
+                            }}
+                        />
+                    </motion.div>
+
+                    {/* Title Section */}
+                    <div className="text-center space-y-2">
+                        <h2 className="text-2xl font-bold text-[#111418] flex items-center justify-center gap-2">
+                            <Link2 className="w-6 h-6 text-black" />
+                            Enter Code or Scan QR
+                        </h2>
+                        <p className="text-sm text-[#8a96a3]">
+                            Connect securely with sender
                         </p>
                     </div>
 
-                    <div
-                        className="w-full bg-center bg-no-repeat bg-cover aspect-video rounded-xl  flex-1"
-                        style={{
-                            backgroundImage:
-                                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDRwSLubOg8NifL88QnKVGS8vhhTPm3OLIdIt7xACvra36oxD9JFmoQpCowGnq5YQuBAdYlWhtbvviQIqQiNPscGjvPS6c6ER0py8e9xEDO7NUkdtCNd60YemIgtVOSmp8uh-ngjcKiiqR-mJ_sgiVNMu7GTJP8dVLC4fWcR9N6E94y_q32OKyScwYMqa6SbvtSYfKkGmrIVg86cSg_Vew6aUEGxFOR10jvOlz_FqrfVGN-kzdSqkObih_IxiVd-21l3AD4fDSYYUk')",
-                        }}
-                    ></div>
+                    {/* Tabs */}
+                    <div className="flex border-b border-[#e2e6ea] relative">
+                        {["code", "qr"].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 relative ${activeTab === tab ? "text-black" : "text-gray-400"
+                                    }`}
+                            >
+                                {tab === "code" ? <KeyRound className="w-4 h-4" /> : <QrCode className="w-4 h-4" />}
+                                {tab === "code" ? "Sender Code" : "QR Scanner"}
 
-                    {/* Tab Switcher */}
-                    <div className="pb-3 border-b border-[#dbe0e6] px-4 gap-8 flex">
-                        <button
-                            onClick={() => setActiveTab("code")}
-                            className={`flex flex-col items-center justify-center pb-[13px] pt-4 cursor-pointer border-b-[3px] ${activeTab === "code"
-                                ? "border-[#111418] text-[#111418]"
-                                : "border-transparent text-[#60758a]"
-                                }`}
-                        >
-                            <p className="text-sm font-bold tracking-wide">User code</p>
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("qr")}
-                            className={`flex flex-col items-center justify-center pb-[13px] pt-4 cursor-pointer border-b-[3px] ${activeTab === "qr"
-                                ? "border-[#111418] text-[#111418]"
-                                : "border-transparent text-[#60758a]"
-                                }`}
-                        >
-                            <p className="text-sm font-bold tracking-wide">QR code</p>
-                        </button>
+                                {activeTab === tab && (
+                                    <motion.div
+                                        layoutId="tabIndicator"
+                                        className="absolute bottom-0 left-0 w-full h-[2px] bg-black"
+                                    />
+                                )}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Tab Content */}
-                    {activeTab === "code" && (
-                        <>
-                            <div className="flex flex-wrap items-end gap-4 px-4 py-3">
-                                <label className="flex flex-col min-w-40 flex-1">
+                    <AnimatePresence mode="wait">
+
+                        {activeTab === "code" && (
+                            <motion.div
+                                key="code"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                className="space-y-4"
+                            >
+                                <div className="relative">
+                                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
                                         type="text"
-                                        placeholder="Enter User-code"
-                                        className="form-input w-full rounded-lg border border-[#dbe0e6] bg-white p-[15px] text-base placeholder:text-[#60758a] h-12 focus:outline-none focus:border-[#111418]"
+                                        placeholder="Enter Sender Code"
                                         value={code}
                                         onChange={(e) => setCode(e.target.value)}
-                                        maxLength={30}
+                                        className="w-full h-12 pl-10 pr-4 rounded-lg border border-[#dbe0e6] focus:outline-none focus:ring-2 focus:ring-[#2f80ed]"
                                     />
-                                </label>
-                                <button
+                                </div>
+
+                                <motion.button
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.96 }}
                                     onClick={handleConnect}
-                                    className="h-12 px-4 rounded-lg bg-[#f0f2f5] text-[#111418] text-sm font-bold cursor-pointer transition-colors"
+                                    className="w-full h-12 bg-white border border-[#dbe0e6] text-black rounded-lg font-semibold hover:border-[#2f80ed] transition flex items-center justify-center gap-2"
                                 >
+                                    <Link2 className="w-4 h-4" />
                                     Connect
-                                </button>
-                            </div>
-                        </>
-                    )}
+                                </motion.button>
+                            </motion.div>
+                        )}
 
-                    {activeTab === "qr" && (
-                        <div className="flex flex-col items-center justify-center py-6 space-y-4">
-                            <div className="relative">
-                                <video
-                                    ref={videoRef}
-                                    autoPlay
-                                    playsInline
-                                    className="w-80 h-60 border-2 border-gray-300 rounded-lg object-cover"
-                                />
-                                {!isScanning && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                                        <p className="text-gray-600">Camera not active</p>
-                                    </div>
-                                )}
-                            </div>
+                        {activeTab === "qr" && (
+                            <motion.div
+                                key="qr"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="flex flex-col items-center py-4 space-y-2"
+                            >
+                                <motion.div
+                                    animate={{ boxShadow: ["0 0 0px #2f80ed", "0 0 15px #2f80ed80", "0 0 0px #2f80ed"] }}
+                                    transition={{ repeat: Infinity, duration: 2 }}
+                                    className="relative w-full rounded-lg"
+                                >
+                                    <video
+                                        ref={videoRef}
+                                        autoPlay
+                                        playsInline
+                                        className="w-full h-56 rounded-lg border object-cover"
+                                    />
 
-                            {qrError && (
-                                <p className="text-red-500 text-sm text-center">{qrError}</p>
-                            )}
+                                    {!isScanning && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg">
+                                            <Camera className="w-10 h-10 text-gray-400" />
+                                        </div>
+                                    )}
+                                </motion.div>
 
-                            <p className="text-gray-600 text-sm text-center">
-                                {isScanning ? "Scanning for QR code..." : "Camera access needed"}
-                            </p>
-                        </div>
-                    )}
-                </div>
+                                <p className="text-sm text-gray-500">
+                                    {isScanning ? "Scanning QR..." : "Camera inactive"}
+                                </p>
+                            </motion.div>
+                        )}
 
-                <AnimatePresence>
-                    {showNotification && senderId && (
-                        <motion.div
-                            initial={{ opacity: 0, x: 300 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 300 }}
-                            transition={{ duration: 0.5, type: "tween" }}
-                            className="w-full px-2 fixed bottom-1/4 left-1/2 transform -translate-x-1/2 z-50"
-                        >
-                            <NotificationToReceiver senderId={senderId} approval={approval} />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                    </AnimatePresence>
+                </motion.div>
             </div>
 
             <Footer />
