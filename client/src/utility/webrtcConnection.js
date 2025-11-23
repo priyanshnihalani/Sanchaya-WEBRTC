@@ -14,7 +14,15 @@ class WebRTCConnection {
         this.chunkTimeout;
         this.setHasError = setHasError
         this.onAckReceived
+        this.connectionAlive = true;
+        this.networkWatcher = () => {
+            if (!navigator.onLine) {
+                console.warn("Browser offline detected");
+                this.failTransfer("offline");
+            }
+        };
 
+        window.addEventListener("offline", this.networkWatcher);
         this.pc = new RTCPeerConnection({
             iceServers: [
                 {
@@ -64,16 +72,49 @@ class WebRTCConnection {
         };
 
         this.pc.oniceconnectionstatechange = () => {
-            console.log("ICE Connection State:", this.pc.iceConnectionState);
+            const state = this.pc.iceConnectionState;
 
-            if (
-                this.pc.iceConnectionState === "connected" ||
-                this.pc.iceConnectionState === "completed"
-            ) {
-                setCompleted(true)
-                console.log("user connected")
+            console.log("ICE Connection State:", state);
+
+            if (state === "connected" || state === "completed") {
+                setCompleted(true);
+            }
+
+            if (state === "disconnected" || state === "failed") {
+                console.error("ICE Failure - Network lost");
+                this.failTransfer("ice-failed");
+            }
+
+            if (state === "closed") {
+                console.warn("ICE closed");
+                this.failTransfer("closed");
             }
         };
+    }
+
+    failTransfer(reason) {
+        console.error("Transfer failed:", reason);
+
+        const key = this.currentFileName || "__connection__";
+
+        this.setHasError(prev => ({
+            ...prev,
+            [key]: true
+        }));
+
+        if (this.currentFileName) {
+            this.updatePercent(this.currentFileName, 0);
+        }
+
+        if (this.writableRef?.current?.abort) {
+            this.writableRef.current.abort();
+        }
+
+        if (this.dataChannel) {
+            try { this.dataChannel.close(); } catch { }
+        }
+
+        this.connectionAlive = false;
     }
 
     formatTime(seconds) {
@@ -121,7 +162,15 @@ class WebRTCConnection {
     async createOffer(senderId, remoteId) {
         this.remoteId = remoteId;
         this.dataChannel = this.pc.createDataChannel("fileTransfer");
+        this.dataChannel.onclose = () => {
+            console.warn("DataChannel closed unexpectedly");
+            this.failTransfer("datachannel-closed");
+        };
 
+        this.dataChannel.onerror = (error) => {
+            console.error("DataChannel error:", error);
+            this.failTransfer("datachannel-error");
+        };
         const offer = await this.pc.createOffer();
         await this.pc.setLocalDescription(offer);
         this.dataChannel.onopen = () => {
@@ -154,6 +203,16 @@ class WebRTCConnection {
 
                 this.dataChannel.onopen = () => {
                     console.log("Receiver data channel OPEN");
+                };
+
+                this.dataChannel.onclose = () => {
+                    console.warn("DataChannel closed unexpectedly");
+                    this.failTransfer("datachannel-closed");
+                };
+
+                this.dataChannel.onerror = (error) => {
+                    console.error("DataChannel error:", error);
+                    this.failTransfer("datachannel-error");
                 };
 
                 this.dataChannel.onmessage = (e) => {
@@ -292,6 +351,16 @@ class WebRTCConnection {
                 }
             }
 
+            if (!this.connectionAlive) {
+                console.warn("Connection lost, stopping transfer");
+                return;
+            }
+
+            if (this.dataChannel.readyState !== "open") {
+                this.failTransfer("channel-not-open");
+                return;
+            }
+
             retryAttempts = 0;
 
             const usageRatio = this.dataChannel.bufferedAmount / maxBuffer;
@@ -319,6 +388,7 @@ class WebRTCConnection {
                 await waitForAck();
             } catch (err) {
                 console.error("❌ Ack timeout:", err);
+                this.failTransfer("ack-timeout");
                 return;
             }
 
@@ -443,10 +513,14 @@ class WebRTCConnection {
     }
 
     closeConnection() {
+        window.removeEventListener("offline", this.networkWatcher);
+        if (this.chunkTimeout) clearTimeout(this.chunkTimeout);
         if (this.dataChannel) {
-            this.dataChannel.close();
+            try { this.dataChannel.close(); } catch { }
         }
-        this.pc.close();
+        if (this.pc) {
+            this.pc.close();
+        }
         console.log("WebRTC connection closed");
     }
 }

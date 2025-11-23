@@ -19,10 +19,13 @@ const FileTransfer = () => {
     percentMap,
     estimatedTimes,
     hasError,
+    connectionStatus
   } = useWebRTC();
 
   const allCompleted = metaData.length > 0 && metaData.every(file => (percentMap[file.name] || 0) === 100);
-  const hasAnyError = metaData.some(file => hasError[file.name]);
+  const hasAnyError =
+  connectionStatus === "failed" ||
+  metaData.some(file => hasError[file.name]);
 
   useEffect(() => {
     if (!metaData || metaData?.length === 0) {
@@ -86,6 +89,12 @@ const FileTransfer = () => {
               <p className="text-sm text-[#6a7581]">
                 Your files are being securely transferred. Please keep this window open.
               </p>
+
+              {connectionStatus === "failed" && (
+                <p className="text-center text-red-600 font-semibold">
+                  Connection lost. Please retry.
+                </p>
+              )}
             </div>
 
             {/* Files List */}
@@ -159,10 +168,10 @@ const FileTransfer = () => {
               animate={{ scale: [1, 1.02, 1] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
               className={`rounded-xl p-5 text-center transition-colors duration-300 ${allCompleted
-                  ? "bg-green-100"
-                  : hasAnyError
-                    ? "bg-red-100"
-                    : "bg-gradient-to-r from-blue-100 to-blue-50"
+                ? "bg-green-100"
+                : hasAnyError
+                  ? "bg-red-100"
+                  : "bg-gradient-to-r from-blue-100 to-blue-50"
                 }`}
             >
 
@@ -180,10 +189,11 @@ const FileTransfer = () => {
                 </p>
               )}
 
-              {!allCompleted && !hasAnyError && (
+              {!allCompleted && !hasAnyError && connectionStatus !== "failed" && (
                 <>
-                  <p className="text-sm text-[#60758a] font-medium">Secure transfer in progress...</p>
-
+                  <p className="text-sm text-[#60758a] font-medium">
+                    Secure transfer in progress...
+                  </p>
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
@@ -193,6 +203,7 @@ const FileTransfer = () => {
                   </motion.div>
                 </>
               )}
+
             </motion.div>
 
           </div>

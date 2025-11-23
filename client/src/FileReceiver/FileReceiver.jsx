@@ -20,7 +20,26 @@ const FileReceiver = () => {
     percentMap,
     estimatedTimes,
     hasError,
+    destroyConnection,
+    resetTransferState,
+    connectionStatus
   } = useWebRTC();
+
+  useEffect(() => {
+    if (connectionStatus === "failed") {
+      console.warn("Connection lost, stopping UI");
+
+      setFileStatus(prev => {
+        const updated = { ...prev };
+        metaData.forEach(file => {
+          if (!updated[file.name]) {
+            updated[file.name] = "error";
+          }
+        });
+        return updated;
+      });
+    }
+  }, [connectionStatus, metaData]);
 
   useEffect(() => {
     if (!metaData || metaData.length === 0) {
@@ -42,6 +61,12 @@ const FileReceiver = () => {
       setActiveFile(null);
     }
   }, [percentMap, activeFile]);
+
+  useEffect(() => {
+    if (!instance) {
+      navigate('/receive', { replace: true });
+    }
+  }, [instance]);
 
   function formatBytes(bytes) {
     if (bytes === 0) return "0 Bytes";
@@ -102,8 +127,8 @@ const FileReceiver = () => {
     metaData.every(file => (percentMap[file.name] || 0) === 100);
 
   const hasAnyError =
+    connectionStatus === "failed" ||
     metaData.some(file => fileStatus[file.name] === "error" || hasError[file.name]);
-
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100">
@@ -134,6 +159,12 @@ const FileReceiver = () => {
               <p className="text-sm text-[#6a7581]">
                 Live secure transfer in progress. Keep this window open.
               </p>
+
+              {connectionStatus === "failed" && (
+                <p className="text-center text-red-600 font-semibold">
+                  Connection lost. Please retry.
+                </p>
+              )}
             </div>
 
             {/* ===== Files ===== */}
@@ -215,12 +246,14 @@ const FileReceiver = () => {
                       <div className="flex gap-3 mt-1">
                         <button
                           onClick={() => handleAcceptFile(item)}
-                          disabled={status === "receiving" || (activeFile && activeFile !== item.name)}
-                          className="px-4 py-1.5 text-sm rounded-lg border hover:border-blue-500 transition disabled:opacity-50"
+                          disabled={
+                            status === "receiving" ||
+                            (activeFile && activeFile !== item.name) ||
+                            connectionStatus === "failed"
+                          }
                         >
                           Accept
                         </button>
-
                         <button
                           onClick={() => handleReject(item.name)}
                           disabled={status === "receiving" || (activeFile && activeFile !== item.name)}
