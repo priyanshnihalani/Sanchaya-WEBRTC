@@ -185,8 +185,8 @@ const FileReceiver = () => {
                   >
 
                     <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold text-[#121416] truncate">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-[#121416] truncate max-w-full">
                           {item.name}
                         </p>
                         <p className="text-xs text-gray-500">
