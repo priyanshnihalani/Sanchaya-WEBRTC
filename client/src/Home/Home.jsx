@@ -58,13 +58,13 @@ const Home = () => {
       <main className="flex-1">
 
         {/* ========== HERO ========== */}
-        <section className="min-h-screen flex items-center justify-center text-center px-8">
+        <section className="min-h-[90vh] flex items-center justify-center text-center px-4 overflow-hidden">
           <div className="max-w-5xl space-y-8">
 
             <motion.h1
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-4xl md:text-6xl font-extrabold"
+              className="text-3xl md:text-6xl font-extrabold"
             >
               Real-time File Sharing Without Compromise
             </motion.h1>
@@ -73,62 +73,63 @@ const Home = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-gray-600 max-w-2xl mx-auto"
+              className="text-gray-600 max-w-2xl mx-auto text-sm md:text-base"
             >
               Direct device-to-device file transfer with full control, no storage, no surveillance.
             </motion.p>
 
-            {/* Animated transfer */}
-            <div className="flex justify-between items-center mt-14">
+            {/* Transfer Animation Container */}
+            <div className="flex justify-between items-center mt-10 relative overflow-hidden">
 
               {/* Sender */}
               <motion.div {...floating} className="flex flex-col items-center">
-                <UploadCloud size={64} className="text-blue-500" />
-                <span className="text-sm mt-2">Sender</span>
+                <UploadCloud size={48} className="text-blue-500 md:size-[64px]" />
+                <span className="text-xs md:text-sm mt-2">Sender</span>
               </motion.div>
 
               {/* Flying Files */}
-              <div className="relative flex gap-4">
+              <div className="relative flex items-center justify-center w-40 md:w-72 h-16 overflow-hidden">
                 {[1, 2, 3].map((i) => (
                   <motion.div
                     key={i}
+                    className="absolute"
                     animate={{
-                      x: [0, 200, 400],
-                      y: [0, -30, 0],
+                      x: [-20, 60, 140],
+                      y: [0, -15, 0],
                       opacity: [0, 1, 0],
                     }}
                     transition={{
-                      duration: 3,
+                      duration: 2.8,
                       delay: i * 0.4,
                       repeat: Infinity,
                     }}
                   >
-                    <File size={28} className="text-blue-400" />
+                    <File size={26} className="text-blue-400" />
                   </motion.div>
                 ))}
               </div>
 
               {/* Receiver */}
               <motion.div {...floating} className="flex flex-col items-center">
-                <Download size={64} className="text-green-500" />
-                <span className="text-sm mt-2">Receiver</span>
+                <Download size={48} className="text-green-500 md:size-[64px]" />
+                <span className="text-xs md:text-sm mt-2">Receiver</span>
               </motion.div>
             </div>
 
             <motion.button
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate?.("/send")}
-              className="mt-10 px-12 py-4 rounded-full font-semibold text-white bg-blue-500 shadow-lg"
+              className="mt-8 px-10 py-3 md:px-12 md:py-4 rounded-full font-semibold text-white bg-blue-500 shadow-lg"
             >
               Start Sending
             </motion.button>
           </div>
         </section>
 
+        {/* ========== TECHNOLOGY SECTION ========== */}
         <section className="py-24">
           <h2 className="text-4xl font-bold text-center mb-16">Technology Powering It</h2>
-
 
           <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 px-6">
             {[
@@ -150,11 +151,9 @@ const Home = () => {
           </div>
         </section>
 
-
-        {/* ========== LIMITATIONS - HONEST DESIGN ========== */}
+        {/* ========== LIMITATIONS ========== */}
         <section className="max-w-6xl mx-auto py-24 px-6">
           <h2 className="text-4xl font-bold text-center mb-12">Transparency & Limitations</h2>
-
 
           <div className="grid md:grid-cols-3 gap-6">
             {limitations.map((item, i) => (
@@ -172,8 +171,7 @@ const Home = () => {
           </div>
         </section>
 
-
-        {/* ========== FINAL CTA - PREMIUM LOOK ========== */}
+        {/* ========== FINAL CTA ========== */}
         <section className="py-28 text-center">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -183,22 +181,22 @@ const Home = () => {
             Experience Honest File Sharing
           </motion.h2>
 
-
           <p className="text-gray-600 text-lg max-w-xl mx-auto">
             Designed for real humans. No storage. No tracking. Just fast, secure transfer.
           </p>
-
 
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate?.("/send")}
-            className="mt-10 px-12 py-4 rounded-full font-semibold text-white  bg-blue-500  shadow-lg"
+            className="mt-10 px-12 py-4 rounded-full font-semibold text-white bg-blue-500 shadow-lg"
           >
             Start Transfer
           </motion.button>
         </section>
+
       </main>
+
       <Footer />
     </div>
   );
