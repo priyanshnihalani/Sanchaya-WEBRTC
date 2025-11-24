@@ -251,6 +251,7 @@ const FileReceiver = () => {
                             (activeFile && activeFile !== item.name) ||
                             connectionStatus === "failed"
                           }
+                          className="px-4 py-1.5 text-sm rounded-lg border hover:border-red-500 transition disabled:opacity-50"
                         >
                           Accept
                         </button>
