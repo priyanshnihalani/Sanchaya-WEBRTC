@@ -39,22 +39,9 @@ class WebRTCConnection {
                 },
                 {
                     urls: "turn:relay1.expressturn.com:3480",
-                    username: "000000002078919882",
-                    credential: "beeYnMspDbWuKhNsJ7YZ/gLk9gg="
-                },
-                {
-                    urls: "turn:relay1.expressturn.com:3480",
-                    username: "000000002069475534",
-                    credential: "b95Jr6HHdKqvjL76cc2JeqdERQU="
-
-                },
-
-                {
-                    urls: "turn:relay1.expressturn.com:3480",
                     username: "000000002069475159",
                     credential: "WZtcnAmmMgxBgrnz25OvrJbLU8M="
-
-                }
+                },
             ],
             iceTransportPolicy: "all"
 
