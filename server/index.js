@@ -13,14 +13,14 @@ const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: process.env.FRONTEND_URL,
+        origin: process.env.FRONTEND_URL_LOCAL,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-        credentials:true
+        credentials: true
     },
 });
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL_LOCAL,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
 }))
 
@@ -138,20 +138,24 @@ app.post("/send-email", async (req, res) => {
             service: "gmail",
             auth: {
                 user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS, 
+                pass: process.env.EMAIL_PASS,
             },
         });
 
         const mailOptions = {
-            from: email,
+            from: `"Sanchaya Website" <${process.env.EMAIL_USER}>`,
             to: process.env.EMAIL_USER,
             subject: `Message from ${name}`,
-            text: message,
+            text: `
+            Name: ${name}
+            Email: ${email}
+            Message:${message}
+            `,
+            replyTo: email
         };
 
         await transporter.sendMail(mailOptions);
         res.status(200).json({ message: "Email sent successfully" });
-
     } catch (error) {
         console.error("Error sending email:", error);
         res.status(500).json({ message: "Failed to send email" });

@@ -52,7 +52,7 @@ function ContactUs() {
         if (!validate()) return;
 
         try {   
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/send-email`, {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL_LOCAL}/send-email`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -61,6 +61,7 @@ function ContactUs() {
             });
 
             if (response.ok) {
+                console.log("Hello")
                 setFormData({ name: "", email: "", message: "" });
                 setErrors({});
                 setShowModal(true);
