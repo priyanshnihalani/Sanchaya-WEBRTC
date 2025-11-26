@@ -13,14 +13,14 @@ const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: process.env.FRONTEND_URL_LOCAL,
+        origin: process.env.FRONTEND_URL,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
         credentials: true
     },
 });
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL_LOCAL,
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
 }))
 
