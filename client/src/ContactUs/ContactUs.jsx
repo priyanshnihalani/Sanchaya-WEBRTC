@@ -61,7 +61,6 @@ function ContactUs() {
             });
 
             if (response.ok) {
-                console.log("Form submitted:", formData);
                 setFormData({ name: "", email: "", message: "" });
                 setErrors({});
                 setShowModal(true);
@@ -156,7 +155,7 @@ function ContactUs() {
 
                         {/* Support Info */}
                         <p className="text-[#6a7681] text-sm text-center px-4 pt-2">
-                            Or contact us at <a href="mailto:support@filedrop.com" className="underline">support@sanchaya.com</a> or call us at (555) 123-4567
+                            Or contact us at <a href="mailto:sanchaya.space@gmail.com" className="underline">sanchaya.space@gmail.com</a>
                         </p>
                     </div>
 
