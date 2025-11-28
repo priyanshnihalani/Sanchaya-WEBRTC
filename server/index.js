@@ -26,6 +26,11 @@ app.use(cors({
 
 app.use(express.json())
 
+app.use((req, res, next) => {
+  console.log("➡️ Incoming:", req.method, req.path);
+  next();
+});
+
 const userSocketMap = new Map();
 const connection = new Map();
 
