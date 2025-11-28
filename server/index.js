@@ -136,33 +136,31 @@ io.on("connection", (socket) => {
 });
 
 app.post("/send-email", async (req, res) => {
+  const {name, email, message} = req.body
   console.log("✅ API HIT");
 
   try {
     console.log("✅ Creating transporter");
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      port: 465,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
+      const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+              user: process.env.MAILER_USER,
+              pass: process.env.MAILER_PASSWORD
+          }
+      });
 
     console.log("✅ Transporter created");
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: email,
       to: process.env.EMAIL_USER,
-      subject: "Test email",
-      text: "Testing Render email"
+      subject: "Contact",
+      text: `
+Name: ${name}
+Email: ${email}
+Message: ${message}
+      `
     });
 
     console.log("✅ Mail sent");
