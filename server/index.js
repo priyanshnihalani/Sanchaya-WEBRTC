@@ -131,38 +131,42 @@ io.on("connection", (socket) => {
 });
 
 app.post("/send-email", async (req, res) => {
-    const { name, email, message } = req.body;
+  console.log("✅ API HIT");
 
-    try {
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
+  try {
+    console.log("✅ Creating transporter");
 
-        await transporter.verify();
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: process.env.EMAIL_USER,
-            subject: `Message from ${name}`,
-            text: `
-            Name: ${name}
-            Email: ${email}
-            Message:${message}
-            `,
-            replyTo: email
-        };
+    console.log("✅ Transporter created");
+    await transporter.verify();
+    console.log("✅ Transporter verified");
 
-        await transporter.sendMail(mailOptions);
-        res.status(200).json({ message: "Email sent successfully" });
-    } catch (error) {
-        console.error("Error sending email:", error);
-        res.status(500).json({ message: "Failed to send email" });
-    }
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: "Test email",
+      text: "Testing Render email"
+    });
+
+    console.log("✅ Mail sent");
+
+    res.status(200).json({ message: "Email sent successfully" });
+
+  } catch (error) {
+    console.error("❌ NODEMAILER ERROR:", error);
+    res.status(500).json({ message: "Failed to send email" });
+  }
 });
+
 
 const PORT = process.env.PORT
 server.listen(process.env.PORT, '0.0.0.0', () => {
