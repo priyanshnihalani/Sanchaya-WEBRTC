@@ -144,11 +144,15 @@ app.post("/send-email", async (req, res) => {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
     console.log("✅ Transporter created");
-    await transporter.verify();
-    console.log("✅ Transporter verified");
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
