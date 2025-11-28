@@ -145,7 +145,7 @@ app.post("/send-email", async (req, res) => {
         await transporter.verify();
 
         const mailOptions = {
-            from: `"Sanchaya Website" <${process.env.EMAIL_USER}>`,
+            from: process.env.EMAIL_USER,
             to: process.env.EMAIL_USER,
             subject: `Message from ${name}`,
             text: `
