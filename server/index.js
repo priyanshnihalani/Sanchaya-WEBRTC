@@ -142,6 +142,8 @@ app.post("/send-email", async (req, res) => {
             },
         });
 
+        await transporter.verify();
+
         const mailOptions = {
             from: `"Sanchaya Website" <${process.env.EMAIL_USER}>`,
             to: process.env.EMAIL_USER,
@@ -164,5 +166,5 @@ app.post("/send-email", async (req, res) => {
 
 const PORT = process.env.PORT
 server.listen(process.env.PORT, '0.0.0.0', () => {
-    console.log(`Server is started at ${process.env.PORT}`)
+    console.log(`Server is started at ${PORT}`)
 })

@@ -2,10 +2,11 @@ import { useState } from "react"
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import { motion } from "framer-motion";
+import { CheckCircle } from "lucide-react";
 
 function ContactUs() {
     const [showModal, setShowModal] = useState(false);
-
+    const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -52,6 +53,7 @@ function ContactUs() {
         if (!validate()) return;
 
         try {   
+            setLoading(true)
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/send-email`, {
                 method: "POST",
                 headers: {
@@ -73,6 +75,9 @@ function ContactUs() {
             console.error("Submission error:", error);
             alert("Something went wrong.");
         }
+        finally{
+            setLoading(false)
+        }
     };
 
 
@@ -81,7 +86,7 @@ function ContactUs() {
         <>
             <Header />
             {showModal && (
-                <DisclaimerModal
+                <ImprovedDisclaimerModal
                     message="Your message was sent successfully!"
                     onClose={() => setShowModal(false)}
                 />
@@ -149,7 +154,7 @@ function ContactUs() {
                                     type="submit"
                                     className="cursor-pointer w-full rounded-full h-10 bg-[#dce8f3] text-[#121416] text-sm font-bold"
                                 >
-                                    Send
+                                    {loading ? "Sending..." : "Send"}
                                 </button>
                             </div>
                         </form>
@@ -168,51 +173,59 @@ function ContactUs() {
     )
 }
 
-export default ContactUs
+export default ContactUs;
 
-const DisclaimerModal = ({ message, onClose }) => {
-  return (
-    <div className="fixed inset-0 z-[9999] bg-slate-900/70 flex items-center justify-center px-4 sm:px-6">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
-        className="w-full max-w-3xl bg-gradient-to-br from-white via-white to-[#e6faff] rounded-3xl shadow-2xl p-6 sm:p-10 text-center font-sans relative"
-      >
-        {/* Success icon container */}
-        <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto mb-5 bg-[#dce8f3] rounded-full shadow-lg">
-          <svg width="36" height="36" fill="none" viewBox="0 0 32 32">
-            <circle cx="16" cy="16" r="16" fill="none" />
-            <path
-              d="M10.5 16.5L15 21L22 14"
-              stroke="#10b981"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
+const ImprovedDisclaimerModal = ({ message, onClose }) => {
+return (
+<div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
+<motion.div
+initial={{ opacity: 0, y: 30, scale: 0.95 }}
+animate={{ opacity: 1, y: 0, scale: 1 }}
+exit={{ opacity: 0, y: 20, scale: 0.95 }}
+transition={{ duration: 0.4, ease: "easeOut" }}
+className="w-full max-w-xl rounded-full bg-white/80 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-8 sm:p-10 text-center relative"
+>
+{/* Animated Glow Ring */}
+<div className="absolute -top-10 left-1/2 -translate-x-1/2 w-28 h-28 rounded-full bg-blue-400/30 blur-2xl" />
 
-        {/* Title */}
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-emerald-600 mb-2">Success!</h2>
 
-        {/* Message */}
-        <p className="text-slate-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto mb-6">
-          {message}
-        </p>
+{/* Icon */}
+<div className="relative w-20 h-20 flex items-center justify-center mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-xl">
+<CheckCircle className="w-10 h-10 text-white" />
+</div>
 
-        {/* Buttons */}
-        <div className="flex justify-center space-x-4">
-          <button
-            onClick={onClose}
-            className="px-6 py-3 text-base sm:text-lg rounded-full bg-gradient-to-r from-[#6a7681] to-[#dce8f3] text-white font-semibold shadow hover:from-[#4b5563] hover:to-[#cbd5e1] transition-all duration-200"
-          >
-            Close
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
+
+{/* Title */}
+<h2 className="text-3xl font-bold text-slate-800 mb-3 tracking-tight">
+Action Completed
+</h2>
+
+
+{/* Message */}
+<p className="text-slate-600 text-base sm:text-lg leading-relaxed max-w-md mx-auto mb-8">
+{message}
+</p>
+
+
+{/* Divider */}
+<div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full mx-auto mb-8" />
+
+
+{/* Button Section */}
+<div className="flex justify-center">
+<button
+onClick={onClose}
+className="group relative inline-flex items-center justify-center px-8 py-3 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-lg shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl focus:outline-none"
+>
+<span className="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition" />
+Close
+</button>
+</div>
+</motion.div>
+</div>
+);
 };
+
+
 
 
