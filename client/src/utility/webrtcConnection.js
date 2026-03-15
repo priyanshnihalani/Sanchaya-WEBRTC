@@ -26,21 +26,15 @@ class WebRTCConnection {
         this.pc = new RTCPeerConnection({
             iceServers: [
                 {
-                    urls: [
-                        "stun:stun.l.google.com:19302",
-                        "stun:global.stun.twilio.com:3478",
-                        "turn:openrelay.metered.ca:80",
-                        "turn:openrelay.metered.ca:443",
-                        "turn:openrelay.metered.ca:443?transport=tcp",
-                        "turns:openrelay.metered.ca:443?transport=tcp"
-                    ],
-                    username: "openrelayproject",
-                    credential: "openrelayproject"
+                    urls: ["stun:stun.l.google.com:19302"]
                 },
                 {
-                    urls: "turn:relay1.expressturn.com:3480",
-                    username: "000000002069475159",
-                    credential: "WZtcnAmmMgxBgrnz25OvrJbLU8M="
+                    urls: [
+                        "turn:sanchaya.space:3478?transport=udp",
+                        "turn:sanchaya.space:3478?transport=tcp"
+                    ],
+                    username: "priyansh",
+                    credential: "#123$@"
                 },
             ],
             iceTransportPolicy: "all"
