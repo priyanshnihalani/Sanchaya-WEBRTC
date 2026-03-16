@@ -62,13 +62,12 @@ class WebRTCConnection {
             }
 
             if (state === "failed") {
-                console.error("ICE Failure - Network lost");
-                this.failTransfer("ice-failed");
+                console.warn("ICE failed → restarting ICE");
+                this.pc.restartIce();
             }
 
             if (state === "disconnected") {
                 console.warn("ICE temporarily disconnected, waiting...");
-                this.pc.restartIce();
             }
 
             if (state === "closed") {
