@@ -103,7 +103,12 @@ function SendInfo() {
                                 className="p-4 rounded-2xl bg-[#f0f6ff]"
                             >
                                 <div className="bg-white p-3 rounded-xl shadow-md">
-                                    <QRCodeGenerator value={user.userName} />
+                                    <QRCodeGenerator
+                                        value={JSON.stringify({
+                                            userId: user.userId,
+                                            userName: user.userName
+                                        })}
+                                    />
                                 </div>
                             </motion.div>
                         </div>
