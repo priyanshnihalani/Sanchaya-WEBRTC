@@ -61,7 +61,7 @@ class WebRTCConnection {
                 setCompleted(true);
             }
 
-            if (state === "disconnected" || state === "failed") {
+            if (state === "failed") {
                 console.error("ICE Failure - Network lost");
                 this.failTransfer("ice-failed");
             }
