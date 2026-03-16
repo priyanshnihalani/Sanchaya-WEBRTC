@@ -53,6 +53,7 @@ function SendInfo() {
     }, [socket, droppedFiles]);
 
     function handleAnswer({answer}) {
+        console.log(answer)
         instance?.handleAnswer(answer);
     }
 
