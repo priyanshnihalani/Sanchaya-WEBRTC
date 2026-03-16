@@ -34,7 +34,14 @@ const Home = () => {
   const socket = useSocket();
 
   useEffect(() => {
-    if (userId) socket.emit("register", { userId });
+    if (socket && userId?.userId && userId?.userName) {
+      socket.emit("register", {
+        userId: userId.userId,
+        userName: userId.userName,
+      });
+
+      console.log("Registered user:", userId.userName);
+    }
   }, [socket, userId]);
 
   const steps = [
