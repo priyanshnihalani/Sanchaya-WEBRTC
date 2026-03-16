@@ -26,9 +26,6 @@ class WebRTCConnection {
         this.pc = new RTCPeerConnection({
             iceServers: [
                 {
-                    urls: ["stun:stun.l.google.com:19302"]
-                },
-                {
                     urls: [
                         "turn:turn.sanchaya.space:3478?transport=udp",
                         "turn:turn.sanchaya.space:3478?transport=tcp"
@@ -36,9 +33,12 @@ class WebRTCConnection {
                     username: "priyansh",
                     credential: "myturnserver"
                 },
+                {
+                    urls: ["stun:stun.l.google.com:19302"]
+                },
             ],
+            iceCandidatePoolSize: 10,
             iceTransportPolicy: "all"
-
         });
 
         this.dataChannel = null;
@@ -68,6 +68,7 @@ class WebRTCConnection {
 
             if (state === "disconnected") {
                 console.warn("ICE temporarily disconnected, waiting...");
+                this.pc.restartIce();
             }
 
             if (state === "closed") {
