@@ -1,12 +1,11 @@
-import { v4 as uuidv4 } from "uuid";
+// src/utils/getOrCreateUserId.js
+import { v4 as uuidv4 } from 'uuid';
 
 export function getOrCreateUserId() {
-  let id = localStorage.getItem('unique_user_id');
-
+  let id = sessionStorage.getItem('unique_user_id');
   if (!id) {
     id = uuidv4();
-    localStorage.setItem('unique_user_id', id);
+    sessionStorage.setItem('unique_user_id', id);
   }
-
   return id;
 }

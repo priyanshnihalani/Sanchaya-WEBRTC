@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle, AlertTriangle, Send, UserCheck } from "lucide-re
 // NotificationToSender.jsx
 export function NotificationToSender({ senderId, receiverId, socket, setHide, files, instance }) {
     const navigate = useNavigate();
-
+    console.log({ senderId, receiverId, socket, setHide, files, instance })
     async function handleApproval(e) {
         const { name } = e.target;
 

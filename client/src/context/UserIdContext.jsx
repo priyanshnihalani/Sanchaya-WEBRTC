@@ -2,27 +2,26 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { getOrCreateUserId } from "../utility/getOrCreateUserId";
 import { shareRoom } from "../utility/shareRoom";
 
-const UserIdContext = createContext();
+const UserIdContext = createContext()
 
 export const UserIdProvider = ({ children }) => {
+    const [userId, setUserId] = useState('')
+    const [userName, setUserName] = useState('')
 
-  const [userId, setUserId] = useState(null);
-  const [room, setRoom] = useState(null);
+    useEffect(() => {
+        const name = shareRoom()
+        const id = getOrCreateUserId()
+        setUserId(id)
+        setUserName(name)
+    }, [])
 
-  useEffect(() => {
-    const id = getOrCreateUserId();
-    const roomName = shareRoom();
+    
 
-    setUserId(id);
-    setRoom(roomName);
-
-  }, []);
-
-  return (
-    <UserIdContext.Provider value={{ userId, room }}>
-      {children}
-    </UserIdContext.Provider>
-  );
-};
+    return (
+        <UserIdContext.Provider value={{ userId, userName }}>
+            {children}
+        </UserIdContext.Provider>
+    )
+}
 
 export const useUserId = () => useContext(UserIdContext);
