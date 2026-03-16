@@ -1,156 +1,226 @@
 import express from "express";
-import cors from 'cors';
-import env from 'dotenv';
+import cors from "cors";
+import dotenv from "dotenv";
 import { Server } from "socket.io";
 import http from "http";
 import nodemailer from "nodemailer";
 
+dotenv.config();
 
-env.config()
+const app = express();
 
-const app = express()
+const server = http.createServer(app);
 
-const server = http.createServer(app)
 const io = new Server(server, {
-    cors: {
-        origin: process.env.FRONTEND_URL,
-        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    },
+  cors: {
+    origin: process.env.FRONTEND_URL,
+    methods: ["GET", "POST"],
+  },
 });
 
-app.use(cors({
+app.use(
+  cors({
     origin: process.env.FRONTEND_URL,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    methods: ["GET", "POST"],
+  })
+);
 
-}))
-
-app.use(express.json())
+app.use(express.json());
 
 app.use((req, res, next) => {
   console.log("➡️ Incoming:", req.method, req.path);
   next();
 });
 
-const userSocketMap = new Map();
-const connection = new Map();
+/*
+====================================================
+USER STORAGE
+====================================================
+*/
+
+const userSocketMap = new Map(); // userId -> socketId
+const codeMap = new Map(); // userName(code) -> userId
+const connection = new Map(); // senderId -> [receiverIds]
+
+/*
+====================================================
+SOCKET CONNECTION
+====================================================
+*/
 
 io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+  console.log("User connected:", socket.id);
 
-    // When client sends offer
+  /*
+  ============================================
+  REGISTER USER
+  ============================================
+  */
 
-    socket.on("register", (userId) => {
-        console.log(userId)
-        userSocketMap.set(userId.userId, socket.id);
-        console.log(`User registered: ${userId.userId} -> ${socket.id}`);
+  socket.on("register", ({ userId, userName }) => {
+    userSocketMap.set(userId, socket.id);
+    codeMap.set(userName, userId);
+
+    console.log(
+      `User registered: ${userName} (${userId}) -> socket ${socket.id}`
+    );
+  });
+
+  /*
+  ============================================
+  RECEIVER REQUESTS CONNECTION
+  ============================================
+  */
+
+  socket.on("connect-sender-receiver", ({ receiverId, senderCode }) => {
+    console.log("CONNECT REQUEST:", receiverId, senderCode);
+
+    const senderUserId = codeMap.get(senderCode);
+
+    if (!senderUserId) {
+      console.log("Sender code not found:", senderCode);
+      socket.emit("sender-not-available", { senderCode });
+      return;
+    }
+
+    const senderSocketId = userSocketMap.get(senderUserId);
+
+    if (!senderSocketId) {
+      console.log("Sender socket not found:", senderUserId);
+      socket.emit("sender-not-available", { senderCode });
+      return;
+    }
+
+    io.to(senderSocketId).emit("receiver-connection-request", {
+      receiverId,
     });
 
-    socket.on("connect-sender-receiver", ({ receiverId, senderId }) => {
-        console.log(userSocketMap)
-        console.log(receiverId)
-        console.log(senderId)
-        const senderSocketId = userSocketMap.get(senderId);
-        // const receiverSocketId = userSocketMap[receiverId];
-        console.log(senderSocketId)
+    console.log(
+      `Receiver ${receiverId} requested connection with sender ${senderCode}`
+    );
+  });
 
+  /*
+  ============================================
+  SENDER APPROVES OR REJECTS RECEIVER
+  ============================================
+  */
 
-        if (senderSocketId) {
+  socket.on("approve-receiver", ({ senderId, receiverId, approved }) => {
+    const receiverSocketId = userSocketMap.get(receiverId);
 
-            io.to(senderSocketId).emit("receiver-connection-request", {
-                receiverId
-            });
+    if (!receiverSocketId) {
+      console.log("Receiver socket not found:", receiverId);
+      return;
+    }
 
-            console.log(`Receiver ${receiverId} requested to connect to sender ${senderId}`);
+    if (approved) {
+      if (!connection.has(senderId)) {
+        connection.set(senderId, []);
+      }
 
-        }
+      const receivers = connection.get(senderId);
 
-        else {
-            socket.emit("sender-not-available", { senderId });
-        }
+      if (!receivers.includes(receiverId)) {
+        receivers.push(receiverId);
+      }
 
-
-        console.log(`User ${receiverId} connected to sender ${senderId}`);
-    });
-
-
-    socket.on('approve-receiver', ({ senderId, receiverId, approved }) => {
-        const receiverSocketId = userSocketMap.get(receiverId)
-
-        if (approved) {
-            if (!connection.has(senderId)) {
-                connection.set(senderId, [])
-            }
-
-            const receivers = connection.get(senderId);
-
-            if (!receivers.includes(receiverId)) {
-                receivers.push(receiverId);
-            }
-
-            // Notify receiver of approval
-            console.log("socket Id: " + receiverSocketId)
-            io.to(receiverSocketId).emit("receiver-approved", { senderId, approved });
-
-            console.log(`Receiver ${receiverId} approved by sender ${senderId}`);
-        }
-        else {
-            // Notify receiver of rejection
-            io.to(receiverSocketId).emit("receiver-rejected", { senderId, approved });
-            console.log(`Receiver ${receiverId} rejected by sender ${senderId}`);
-        }
-    })
-
-    socket.on("webrtc-offer", ({ offer, from, to }) => {
-        console.log(`Offer from ${socket.id} to ${to}`);
-        console.log(from)
-        const receiverId = userSocketMap.get(to)
-
-        io.to(receiverId).emit("webrtc-offer", { offer, from });
-    });
-
-    // When client sends answer
-    socket.on("webrtc-answer", ({ answer, to }) => {
-        console.log(`Answer from ${socket.id} to ${to}`);
-        console.log("To: " + to)
-        const senderId = userSocketMap.get(to)
-        io.to(senderId).emit("webrtc-answer", answer);
-    });
-
-    // When client sends ICE candidate
-    socket.on("webrtc-candidate", ({ candidate, to }) => {
-        console.log(`Candidate from ${socket.id} to ${to}`);
-        const fromto = userSocketMap.get(to)
-        io.to(fromto).emit("webrtc-candidate", { candidate });
-    });
-
-    // Handle room joining if needed (optional)
-    socket.on("join-room", (roomId) => {
-        socket.join(roomId);
-        console.log(`${socket.id} joined room ${roomId}`);
-    });
-
-    // Handle disconnect
-    socket.on("disconnect", () => {
-        console.log("User disconnected:", socket.id);
-    });
-});
-
-app.post("/send-email", async (req, res) => {
-  const {name, email, message} = req.body
-  console.log("✅ API HIT");
-
-  try {
-    console.log("✅ Creating transporter");
-
-      const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-              user: process.env.MAILER_USER,
-              pass: process.env.MAILER_PASSWORD
-          }
+      io.to(receiverSocketId).emit("receiver-approved", {
+        senderId,
+        approved: true,
       });
 
-    console.log("✅ Transporter created");
+      console.log(`Receiver ${receiverId} approved by sender ${senderId}`);
+    } else {
+      io.to(receiverSocketId).emit("receiver-rejected", {
+        senderId,
+        approved: false,
+      });
+
+      console.log(`Receiver ${receiverId} rejected by sender ${senderId}`);
+    }
+  });
+
+  /*
+  ============================================
+  WEBRTC SIGNALING
+  ============================================
+  */
+
+  socket.on("webrtc-offer", ({ offer, from, to }) => {
+    console.log(`Offer from ${from} -> ${to}`);
+
+    const receiverSocketId = userSocketMap.get(to);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("webrtc-offer", { offer, from });
+    }
+  });
+
+  socket.on("webrtc-answer", ({ answer, to }) => {
+    console.log(`Answer -> ${to}`);
+
+    const senderSocketId = userSocketMap.get(to);
+
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("webrtc-answer", answer);
+    }
+  });
+
+  socket.on("webrtc-candidate", ({ candidate, to }) => {
+    console.log(`ICE candidate -> ${to}`);
+
+    const targetSocket = userSocketMap.get(to);
+
+    if (targetSocket) {
+      io.to(targetSocket).emit("webrtc-candidate", { candidate });
+    }
+  });
+
+  /*
+  ============================================
+  DISCONNECT
+  ============================================
+  */
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+
+    for (const [userId, socketId] of userSocketMap.entries()) {
+      if (socketId === socket.id) {
+        userSocketMap.delete(userId);
+
+        for (const [code, id] of codeMap.entries()) {
+          if (id === userId) {
+            codeMap.delete(code);
+            break;
+          }
+        }
+
+        console.log(`User removed: ${userId}`);
+        break;
+      }
+    }
+  });
+});
+
+/*
+====================================================
+EMAIL API
+====================================================
+*/
+
+app.post("/send-email", async (req, res) => {
+  const { name, email, message } = req.body;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.MAILER_USER,
+        pass: process.env.MAILER_PASSWORD,
+      },
+    });
 
     await transporter.sendMail({
       from: email,
@@ -160,21 +230,26 @@ app.post("/send-email", async (req, res) => {
 Name: ${name}
 Email: ${email}
 Message: ${message}
-      `
+`,
     });
 
-    console.log("✅ Mail sent");
+    console.log("Mail sent successfully");
 
     res.status(200).json({ message: "Email sent successfully" });
-
   } catch (error) {
-    console.error("❌ NODEMAILER ERROR:", error);
+    console.error("Mailer error:", error);
     res.status(500).json({ message: "Failed to send email" });
   }
 });
 
+/*
+====================================================
+SERVER START
+====================================================
+*/
 
-const PORT = process.env.PORT
-server.listen(process.env.PORT, '0.0.0.0', () => {
-    console.log(`Server is started at ${PORT}`)
-})
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server started on port ${PORT}`);
+});
