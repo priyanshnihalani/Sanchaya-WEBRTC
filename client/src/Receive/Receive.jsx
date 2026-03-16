@@ -86,7 +86,7 @@ const Receive = () => {
                 (result) => {
                     setCode(result.data);
                     console.log('Scanned QR code:', result.data);
-                    socket.emit("connect-sender-receiver", { receiverId: userId.userName, senderId: result.data });
+                    socket.emit("connect-sender-receiver", { receiverId: userId.room, senderId: result.data });
                     qrScannerRef.current.stop();
                 },
                 {
@@ -349,7 +349,7 @@ const Receive = () => {
             }
 
             socket.emit("receiver-reconnected", {
-                receiverId: userId.userName,
+                receiverId: userId.room,
                 senderId: code,
             });
         };
@@ -361,7 +361,7 @@ const Receive = () => {
             socket.off("disconnect", handleDisconnect);
             socket.off("connect", handleReconnect);
         };
-    }, [socket, code, userId.userName, recvProgressList]);
+    }, [socket, code, userId.room, recvProgressList]);
 
 
     useEffect(() => {
@@ -408,7 +408,7 @@ const Receive = () => {
 
     const handleConnect = () => {
         if (code.length > 0) {
-            socket.emit("connect-sender-receiver", { receiverId: userId.userName, senderId: code });
+            socket.emit("connect-sender-receiver", { receiverId: userId.room, senderId: code });
             setConnectNotify(true)
             setTimeout(() => {
                 setConnectNotify(false)
