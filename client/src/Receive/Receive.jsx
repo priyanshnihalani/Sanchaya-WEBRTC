@@ -84,11 +84,11 @@ const Receive = () => {
             qrScannerRef.current = new QrScanner(
                 videoRef.current,
                 (result) => {
-                    setCode(result.data);
-                    console.log('Scanned QR code:', result.data);
+                    const parsed = JSON.parse(result.data);
+                    setCode(parsed.userName);
                     socket.emit("connect-sender-receiver", {
                         receiverId: userId.userId,
-                        senderCode: code
+                        senderCode: parsed.userName
                     });
                     qrScannerRef.current.stop();
                 },
@@ -410,23 +410,21 @@ const Receive = () => {
 
 
     const handleConnect = () => {
-        if (code.length > 0) {
-            const parsed = JSON.parse(result.data);
-            socket.emit("connect-sender-receiver", {
-                receiverId: userId.userId,
-                senderId: parsed.userId
-            });
-            setConnectNotify(true)
-            setTimeout(() => {
-                setConnectNotify(false)
-            }, 5000)
-        } else {
-            setErrorNotify(true)
-            setTimeout(() => {
-                setErrorNotify(false)
-            }, 5000)
+
+        if (!code || code.trim().length === 0) {
+            setErrorNotify(true);
+            setTimeout(() => setErrorNotify(false), 5000);
+            return;
         }
-    }
+
+        socket.emit("connect-sender-receiver", {
+            receiverId: userId.userId,
+            senderCode: code.trim()
+        });
+
+        setConnectNotify(true);
+        setTimeout(() => setConnectNotify(false), 5000);
+    };
 
     return (
         <div
