@@ -1,69 +1,26 @@
 export function connectionSetUp(io) {
-
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    let currentRoom = null;
-
-    // JOIN ROOM
-    socket.on("join", ({ room, userId }) => {
-      currentRoom = room;
-      socket.userId = userId;
-
+    socket.on("join", (room) => {
       socket.join(room);
-
-      console.log(`User ${userId} (${socket.id}) joined room ${room}`);
-
-      // notify others
-      socket.to(room).emit("peer-joined", {
-        userId: userId
-      });
+      console.log(`User ${socket.id} joined room ${room}`);
     });
 
-
-    // OFFER
     socket.on("offer", ({ offer, room }) => {
-      console.log("Offer from", socket.userId);
-
-      socket.to(room).emit("offer", {
-        offer,
-        from: socket.userId
-      });
+      socket.to(room).emit("offer", { offer, from: socket.id });
     });
 
-
-    // ANSWER
     socket.on("answer", ({ answer, room }) => {
-      console.log("Answer from", socket.userId);
-
-      socket.to(room).emit("answer", {
-        answer,
-        from: socket.userId
-      });
+      socket.to(room).emit("answer", { answer, from: socket.id });
     });
 
-
-    // ICE CANDIDATE
     socket.on("ice-candidate", ({ candidate, room }) => {
-      console.log("ICE candidate from", socket.userId);
-
-      socket.to(room).emit("ice-candidate", {
-        candidate,
-        from: socket.userId
-      });
+      socket.to(room).emit("ice-candidate", { candidate, from: socket.id });
     });
 
-
-    // DISCONNECT
     socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.userId, socket.id);
-
-      if (currentRoom) {
-        socket.to(currentRoom).emit("peer-disconnected", {
-          userId: socket.userId
-        });
-      }
+      console.log("User disconnected:", socket.id);
     });
-
   });
 }
