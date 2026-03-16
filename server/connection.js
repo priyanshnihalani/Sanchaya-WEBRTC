@@ -1,26 +1,51 @@
+const users = new Map();
 export function connectionSetUp(io) {
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
-
-    socket.on("join", (room) => {
-      socket.join(room);
-      console.log(`User ${socket.id} joined room ${room}`);
+    // Register user
+    socket.on("register", (userId) => {
+      users.set(userId, socket.id);
+      console.log("User registered:", userId, socket.id);
     });
-
-    socket.on("offer", ({ offer, room }) => {
-      socket.to(room).emit("offer", { offer, from: socket.id });
+    // WebRTC OFFER
+    socket.on("webrtc-offer", ({ offer, from, to }) => {
+      const targetSocket = users.get(to);
+      if (targetSocket) {
+        io.to(targetSocket).emit("webrtc-offer", {
+          offer,
+          from
+        });
+      } else {
+        console.log("Target user not found:", to);
+      }
     });
-
-    socket.on("answer", ({ answer, room }) => {
-      socket.to(room).emit("answer", { answer, from: socket.id });
+    // WebRTC ANSWER
+    socket.on("webrtc-answer", ({ answer, to }) => {
+      const targetSocket = users.get(to);
+      if (targetSocket) {
+        io.to(targetSocket).emit("webrtc-answer", {
+          answer
+        });
+      }
     });
-
-    socket.on("ice-candidate", ({ candidate, room }) => {
-      socket.to(room).emit("ice-candidate", { candidate, from: socket.id });
+    // ICE CANDIDATE
+    socket.on("webrtc-candidate", ({ candidate, to }) => {
+      const targetSocket = users.get(to);
+      if (targetSocket) {
+        io.to(targetSocket).emit("webrtc-candidate", {
+          candidate
+        });
+      }
     });
-
+    // Disconnect
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
+      for (const [userId, socketId] of users.entries()) {
+        if (socketId === socket.id) {
+          users.delete(userId);
+          break;
+        }
+      }
     });
   });
 }
