@@ -183,7 +183,7 @@ function SendInfo() {
                         className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4"
                     >
                         <NotificationToSender
-                            senderId={user.userName}
+                            senderId={user.room}
                             receiverId={receiver}
                             approved={approval}
                             socket={socket}
