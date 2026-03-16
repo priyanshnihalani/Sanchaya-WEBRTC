@@ -37,7 +37,7 @@ class WebRTCConnection {
                     credential: "myturnserver"
                 },
             ],
-            iceTransportPolicy: "all"
+            iceTransportPolicy: "relay"
 
         });
 
