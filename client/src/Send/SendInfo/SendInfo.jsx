@@ -52,7 +52,7 @@ function SendInfo() {
         if (!instance && socket) createConnection(droppedFiles);
     }, [socket, droppedFiles]);
 
-    function handleAnswer(answer) {
+    function handleAnswer({answer}) {
         instance?.handleAnswer(answer);
     }
 
