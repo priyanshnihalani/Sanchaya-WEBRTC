@@ -37,7 +37,7 @@ class WebRTCConnection {
                     credential: "myturnserver"
                 },
             ],
-            iceTransportPolicy: "relay"
+            iceTransportPolicy: "all"
 
         });
 
@@ -64,6 +64,10 @@ class WebRTCConnection {
             if (state === "failed") {
                 console.error("ICE Failure - Network lost");
                 this.failTransfer("ice-failed");
+            }
+
+            if (state === "disconnected") {
+                console.warn("ICE temporarily disconnected, waiting...");
             }
 
             if (state === "closed") {
