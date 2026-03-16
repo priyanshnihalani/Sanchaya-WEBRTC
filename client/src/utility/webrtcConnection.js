@@ -34,7 +34,7 @@ class WebRTCConnection {
                         "turn:turn.sanchaya.space:3478?transport=tcp"
                     ],
                     username: "priyansh",
-                    credential: "#123$@"
+                    credential: "my123$@"
                 },
             ],
             iceTransportPolicy: "all"
