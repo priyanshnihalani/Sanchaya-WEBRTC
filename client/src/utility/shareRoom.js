@@ -12,6 +12,5 @@ export function shareRoom() {
         length: 2,
     }) + '-' + Math.floor(Math.random() * 1000);
 
-    window.history.replaceState(null, "", `/room/${newRoom}`);
     return newRoom;
 }

@@ -13,6 +13,7 @@ import { QrCode, ShieldCheck, Wifi } from "lucide-react";
 
 function SendInfo() {
     const user = useUserId();
+    console.log(user)
     const location = useLocation();
     const { fromSend } = location.state || {};
 
@@ -64,7 +65,7 @@ function SendInfo() {
     useEffect(() => {
         const handleCandidate = ({ candidate }) => {
             instance?.addIceCandidate(candidate);
-            const metaData = droppedFiles.map(item => ({ name: item.name, size: item.size }));
+            const metaData = (droppedFiles || []).map(item => ({ name: item.name, size: item.size }));
             navigate('/file-transfer', { state: { metaData } });
         };
 
@@ -103,7 +104,7 @@ function SendInfo() {
                                 className="p-4 rounded-2xl bg-[#f0f6ff]"
                             >
                                 <div className="bg-white p-3 rounded-xl shadow-md">
-                                    <QRCodeGenerator value={user.userName} />
+                                    <QRCodeGenerator value={user?.room} />
                                 </div>
                             </motion.div>
                         </div>
@@ -121,7 +122,7 @@ function SendInfo() {
                                 transition={{ duration: 2, repeat: Infinity }}
                                 className="inline-block px-6 py-3 text-xl font-bold tracking-widest rounded-xl bg-[#f0f2f5] text-[#111418] shadow-sm"
                             >
-                                {user.userName}
+                                {user?.room}
                             </motion.div>
                         </motion.div>
 
