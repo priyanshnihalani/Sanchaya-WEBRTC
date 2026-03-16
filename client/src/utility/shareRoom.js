@@ -1,3 +1,5 @@
+import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
+
 export function shareRoom() {
     const path = window.location.pathname;
     const parts = path.split("/");
