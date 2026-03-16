@@ -1,13 +1,19 @@
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
-export function shareRoom() {
-    const name = uniqueNamesGenerator({
+export function getOrCreateUserName() {
+
+  let name = sessionStorage.getItem("username");
+
+  if (!name) {
+    name =
+      uniqueNamesGenerator({
         dictionaries: [adjectives, animals],
-        separator: '-',
+        separator: "-",
         length: 2,
-    }) + '-' + Math.floor(Math.random() * 1000);
+      }) + "-" + Math.floor(Math.random() * 1000);
 
-    return name
+    sessionStorage.setItem("username", name);
+  }
+
+  return name;
 }
-
-

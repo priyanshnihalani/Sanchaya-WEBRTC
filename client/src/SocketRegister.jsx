@@ -3,17 +3,22 @@ import { useSocket } from "./context/SocketContext";
 import { useUserId } from "./context/UserIdContext";
 
 function SocketRegistrar() {
-    const userId = useUserId();
+
+    const { userId, userName } = useUserId();
     const socket = useSocket();
 
     useEffect(() => {
-        if (userId && socket) {
-            socket.emit("register", {userId: userId.userName}); // you should emit a string or number, not an object
-            console.log("Registered with socket:", userId.userName);
-        }
+
+        if (!socket || !userId) return;
+
+        socket.emit("register", userId);
+
+        console.log("Registered socket with userId:", userId);
+        console.log("Username:", userName);
+
     }, [socket, userId]);
 
-    return null; 
+    return null;
 }
 
 export default SocketRegistrar;
