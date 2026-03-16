@@ -30,8 +30,8 @@ class WebRTCConnection {
                 },
                 {
                     urls: [
-                        "turn:sanchaya.space:3478?transport=udp",
-                        "turn:sanchaya.space:3478?transport=tcp"
+                        "turn:turn.sanchaya.space:3478?transport=udp",
+                        "turn:turn.sanchaya.space:3478?transport=tcp"
                     ],
                     username: "priyansh",
                     credential: "#123$@"
