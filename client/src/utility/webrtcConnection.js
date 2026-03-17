@@ -61,7 +61,9 @@ class WebRTCConnection {
             const state = this.pc.iceConnectionState;
 
             console.log("ICE Connection State:", state);
-
+            const pair = this.pc.sctp?.transport?.iceTransport?.getSelectedCandidatePair?.();
+            console.log("SELECTED PAIR:", pair);
+            
             if (state === "connected" || state === "completed") {
                 setCompleted(true);
             }
