@@ -50,11 +50,11 @@ class WebRTCConnection {
         this.remoteDescriptionSet = false;
         this.pendingCandidates = [];
 
-        this.pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                this.socket.emit("webrtc-candidate", { candidate: event.candidate, to: this.remoteId });
-            }
-        };
+        // this.pc.onicecandidate = (event) => {
+        //     if (event.candidate) {
+        //         this.socket.emit("webrtc-candidate", { candidate: event.candidate, to: this.remoteId });
+        //     }
+        // };
 
         this.pc.oniceconnectionstatechange = () => {
             const state = this.pc.iceConnectionState;
@@ -73,8 +73,6 @@ class WebRTCConnection {
 
             if (state === "disconnected") {
                 console.warn("ICE temporarily disconnected, waiting...");
-                this.pc.restartIce();
-                this.switchIceServer = "relay"
             }
 
             if (state === "closed") {
