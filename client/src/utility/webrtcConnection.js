@@ -75,6 +75,8 @@ class WebRTCConnection {
 
             if (state === "disconnected") {
                 console.warn("ICE temporarily disconnected, waiting...");
+                this.fallbackToTURN()
+                console.info("Falling Back To Turn...")
             }
 
             if (state === "closed") {
