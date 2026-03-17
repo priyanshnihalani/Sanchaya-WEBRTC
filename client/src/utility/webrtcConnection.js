@@ -29,7 +29,6 @@ class WebRTCConnection {
             iceServers: [
                 {
                     urls: [
-                        "turns:turn.sanchaya.space:443?transport=tcp",
                         "turn:turn.sanchaya.space:3478?transport=udp",
                         "turn:turn.sanchaya.space:3478?transport=tcp"
                     ],
@@ -101,7 +100,6 @@ class WebRTCConnection {
                 iceServers: [
                     {
                         urls: [
-                            "turns:turn.sanchaya.space:443?transport=tcp",
                             "turn:turn.sanchaya.space:3478?transport=udp",
                             "turn:turn.sanchaya.space:3478?transport=tcp"
                         ],
